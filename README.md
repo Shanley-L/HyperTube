@@ -33,9 +33,6 @@ HyperTube is a full-stack web application that allows users to:
 - PostgreSQL (v14 or higher) - [Download](https://www.postgresql.org/download/)
 - FFmpeg - [Download](https://ffmpeg.org/download.html)
 - Git
-
-**Note:** Pour un guide d'installation détaillé, voir [INSTALLATION_GUIDE.md](INSTALLATION_GUIDE.md)
-
 ## Installation
 
 ### Option 1: Automated Installation (Recommended)
