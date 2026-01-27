@@ -21,3 +21,4 @@ temp/
 .vite/
 coverage/
 .nyc_output/
+.cursor/

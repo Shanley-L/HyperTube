@@ -13,7 +13,6 @@ function App() {
           </Routes>
         </main>
         <footer>
-          <p>HyperTube - 42 Project</p>
         </footer>
       </div>
     </Router>
