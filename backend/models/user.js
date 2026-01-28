@@ -53,3 +53,25 @@ export const updatePassword = async (userId, newHash) => {
   const values = [newHash, userId];
   await pool.query(query, values);
 };
+
+export const findOrCreateOAuthUser =  async (provider, providerId, profile) => {
+  const query = 'SELECT * FROM users WHERE oauth_provider = $1 AND oauth_id = $2'
+  const result = await pool.query(query, [provider, providerId]);
+  if (result.rows.length > 0) return result.rows[0];
+
+  let username = profile.username || profile.email.split('@')[0];
+  while (await findByUsername(username)) {
+    username = username + '_' + Math.floor(Math.random() * 1000);
+  }
+  const insertQuery = `INSERT INTO users (email, username, first_name, last_name, oauth_provider, oauth_id, email_verified) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING ${SAFE_USER_COLUMNS}`
+  const values = [
+    profile.email,
+    username,
+    profile.first_name,
+    profile.last_name,
+    provider,
+    providerId,
+  ];
+  const insertResult = await pool.query(insertQuery, values);
+  return insertResult.rows[0];
+};
