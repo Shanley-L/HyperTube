@@ -38,14 +38,14 @@ router.post('/reset-password/:token', validate([
 ]), AuthController.resetPassword);
 
 router.get('/42', passport.authenticate('42', {session: false}));
-router.get('/42/callback', passport.authenticate('42', {session: false, failureRedirect: '/login?error=42_auth_failed'}),
+router.get('/42/callback', passport.authenticate('42', { session: false, failureRedirect: `${process.env.FRONTEND_URL}/login?error=42_auth_failed` }),
   async (req, res) => {
     const token = jwt.sign({userId: req.user.id, username: req.user.username}, process.env.JWT_SECRET, { expiresIn: '1h'});
     res.redirect(`${process.env.FRONTEND_URL}/auth/callback?token=${token}`);
   });
 
 router.get('/google', passport.authenticate('google', {scope: ['profile', 'email']}));
-router.get('/google/callback', passport.authenticate('google', {session: false, failureRedirect: '/login?error=google_auth_failed'}),
+router.get('/google/callback', passport.authenticate('google', { session: false, failureRedirect: `${process.env.FRONTEND_URL}/login?error=google_auth_failed` }),
   async (req, res) => {
     const token = jwt.sign({userId: req.user.id, username: req.user.username}, process.env.JWT_SECRET, { expiresIn: '1h'});
     res.redirect(`${process.env.FRONTEND_URL}/auth/callback?token=${token}`);

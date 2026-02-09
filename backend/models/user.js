@@ -71,6 +71,7 @@ export const findOrCreateOAuthUser =  async (provider, providerId, profile) => {
     profile.last_name,
     provider,
     providerId,
+    true,
   ];
   const insertResult = await pool.query(insertQuery, values);
   return insertResult.rows[0];
