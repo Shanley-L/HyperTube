@@ -99,12 +99,16 @@ function LoginPage() {
         <p>Don't have an account? <Link to="/register">Register</Link></p>
         <p>Forgot your password? <Link to="/forgot-password">Reset Password</Link></p>
         <div className="oauth-section">
-          <button className="oauth-button">
-            <img src={"./src/assets/google.png"} alt="Google" />
-          </button>
-          <button className="oauth-button">
-            <img src={"./src/assets/42.png"} alt="42" />
-          </button>
+          <a href={`${import.meta.env.VITE_BACKEND_URL}/api/auth/google`}>
+            <button className="oauth-button">
+              <img src={"./src/assets/google.png"} alt="Login with Google"/>
+            </button>
+          </a>
+          <a href={`${import.meta.env.VITE_BACKEND_URL}/api/auth/42`}>
+            <button className="oauth-button">
+              <img src={"./src/assets/42.png"} alt="Login with 42" />
+            </button>
+          </a>
         </div>
       </div>
   );
