@@ -7,11 +7,18 @@ import rateLimit from 'express-rate-limit';
 import pool from './config/database.js';
 import passport from './config/passport.js';
 import authRoutes from './routes/auth.js';
+import videoRouter from './routes/video.js';
+import { ApiRoutes } from './config/resourceNames.js';
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+app.use(cors({
+  origin: ApiRoutes.BaseUrl,
+  credentials: true
+}));
 
 app.use(passport.initialize());
 app.use(helmet());
@@ -21,17 +28,18 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100
+	windowMs: 15 * 60 * 1000,
+	max: 100
 });
 
-app.use('/api/', limiter);
+app.use(ApiRoutes.API, limiter);
+app.use(ApiRoutes.Video, videoRouter);
 
-app.get('/api/health', (req, res) => {
+app.get(ApiRoutes.Health, (req, res) => {
   res.json({ status: 'ok', message: 'HyperTube API is running' });
 });
 
-app.get('/api/db/health', async (req, res) => {
+app.get(ApiRoutes.DBHealth, async (req, res) => {
   try {
     await pool.query('SELECT 1');
     res.json({ status: 'ok', message: 'Database connection successful' });
@@ -44,8 +52,9 @@ app.get('/api/db/health', async (req, res) => {
   }
 });
 
-app.use('/api/auth', authRoutes);
+app.use(ApiRoutes.Auth, authRoutes);
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+  console.log(`Access the dashboard at: ${ApiRoutes.BaseUrl}`);
 });
