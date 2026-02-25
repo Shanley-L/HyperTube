@@ -123,16 +123,8 @@ sudo apt-get install ffmpeg
 
 ### Development Mode
 
-**Backend:**
 ```bash
-cd backend
-npm run dev
-```
-
-**Frontend:**
-```bash
-cd frontend
-npm run dev
+make dev
 ```
 
 The backend will run on `http://localhost:3000`

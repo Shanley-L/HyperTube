@@ -1,49 +1,103 @@
 import express from 'express';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import torrentStream from 'torrent-stream';
+import ffmpeg from 'fluent-ffmpeg';
+import { ApiRoutes } from '../config/resourceNames.js';
 
 const router = express.Router();
+const activeEngines = {};
 
-// Fix for __dirname in ESM
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+router.get(ApiRoutes.Stream, (req, res) => {
+    const magnetHash = req.params.id;
+    const magnetLink = `magnet:?xt=urn:btih:${magnetHash}`;
 
-router.get('/stream/:id', (req, res) => {
-  const videoPath = path.join(__dirname, '../assets/test-video.mp4'); 
+    if (!activeEngines[magnetHash]) {
+        activeEngines[magnetHash] = torrentStream(magnetLink, { path: './downloads' });
+    }
 
-  if (!fs.existsSync(videoPath)) {
-    return res.status(404).send('Video not found');
-  }
+    const engine = activeEngines[magnetHash];
 
-  const stat = fs.statSync(videoPath);
-  const fileSize = stat.size;
-  const range = req.headers.range;
+    const startStreaming = () => {
+        const file = engine.files.reduce((prev, curr) => prev.length > curr.length ? prev : curr);
+        const isMp4 = file.name.endsWith('.mp4');
+        
+        console.log(`🎬 Target file: ${file.name} | Transcoding: ${!isMp4}`);
 
-  if (range) {
-    const parts = range.replace(/bytes=/, "").split("-");
-    const start = parseInt(parts[0], 10);
-    const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
-    const chunksize = (end - start) + 1;
+        if (isMp4) {
+            const fileSize = file.length;
+            const range = req.headers.range;
 
-    const file = fs.createReadStream(videoPath, { start, end });
-    const head = {
-      'Content-Range': `bytes ${start}-${end}/${fileSize}`,
-      'Accept-Ranges': 'bytes',
-      'Content-Length': chunksize,
-      'Content-Type': 'video/mp4',
+            if (range) {
+                const parts = range.replace(/bytes=/, "").split("-");
+                const start = parseInt(parts[0], 10);
+                const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+                const chunksize = (end - start) + 1;
+
+                res.writeHead(206, {
+                    'Content-Range': `bytes ${start}-${end}/${fileSize}`,
+                    'Accept-Ranges': 'bytes',
+                    'Content-Length': chunksize,
+                    'Content-Type': 'video/mp4',
+                });
+                file.createReadStream({ start, end }).pipe(res);
+            }
+			else {
+                res.writeHead(200, {
+                    'Content-Length': fileSize,
+                    'Content-Type': 'video/mp4',
+                });
+                file.createReadStream().pipe(res);
+            }
+        }
+		else {
+            res.writeHead(200, {
+                'Content-Type': 'video/mp4',
+                'Connection': 'keep-alive',
+                'Transfer-Encoding': 'chunked'
+            });
+
+            ffmpeg(file.createReadStream())
+                .videoCodec('libx264')
+                .audioCodec('aac')
+                .format('mp4')
+                .outputOptions([
+                    '-movflags frag_keyframe+empty_moov',
+                    '-pix_fmt yuv420p',
+                    '-preset ultrafast'
+                ])
+                .on('error', (err) => {
+                    console.log('FFmpeg Error:', err.message);
+                })
+                .pipe(res, { end: true });
+        }
     };
 
-    res.writeHead(206, head);
-    file.pipe(res);
-  } else {
-    const head = {
-      'Content-Length': fileSize,
-      'Content-Type': 'video/mp4',
-    };
-    res.writeHead(200, head);
-    fs.createReadStream(videoPath).pipe(res);
-  }
+    // Use our helper but pass startStreaming as a callback
+    setupEngineListeners(engine, startStreaming);
+
+    if (engine.files && engine.files.length > 0) {
+        startStreaming();
+    } else {
+        // We use .once to ensure it only fires once per request
+        engine.once('ready', startStreaming);
+    }
 });
 
-export default router; // Use export default instead of module.exports
+function setupEngineListeners(engine, callback) {
+    // Check if we've already attached these to avoid log spam
+    if (engine.hasCustomListeners) return;
+    engine.hasCustomListeners = true;
+
+    engine.on('torrent', () => {
+        console.log("✅ Metadata received! Found files:", engine.files.map(f => f.name));
+    });
+
+    const interval = setInterval(() => {
+        if (engine.swarm) {
+            const connected = engine.swarm.wires.length;
+            console.log(`📡 Connected peers: ${connected}`);
+            if (connected > 0) clearInterval(interval); 
+        }
+    }, 3000);
+}
+
+export default router;

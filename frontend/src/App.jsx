@@ -12,9 +12,6 @@ function App() {
           <header>
             <h1>HyperTube</h1>
           </header>
-			<nav>
-				<Link to="/movie/test-movie">Test Movie Stream</Link>
-			</nav>
           <main>
             <Routes>
               <Route path="/" element={<div>Home Page</div>} />

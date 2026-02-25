@@ -7,5 +7,6 @@ export const ApiRoutes = {
   Auth: `${API_PREFIX}/auth`,
   Health: `${API_PREFIX}/health`,
   DBHealth: `${API_PREFIX}/db/health`,
-  Stream: `${API_PREFIX}/video/stream/:id`,
+
+  Stream: '/stream/:id'
 };

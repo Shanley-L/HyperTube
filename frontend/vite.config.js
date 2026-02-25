@@ -9,7 +9,9 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:3000',
         changeOrigin: true,
-      },
-    },
+        // rewrite: (path) => path.replace(/^\/api/, ''), 
+        // ^ Only uncomment if your backend routes DON'T start with /api
+      }
+    }
   },
 });
