@@ -1,6 +1,7 @@
 services:
   db:
     image: postgres:16-alpine
+    container_name: hypertube_db
     environment:
       POSTGRES_USER: ${DB_USER:-hypertube}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-hypertube}
@@ -10,30 +11,53 @@ services:
       - ./backend/database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
     ports:
       - "${DB_PORT:-5432}:5432"
+    networks:
+      - hypertube-net
     healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "pg_isready -U ${DB_USER:-hypertube} -d ${DB_NAME:-hypertube}",
-        ]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-hypertube} -d ${DB_NAME:-hypertube}"]
       interval: 5s
       timeout: 5s
       retries: 5
 
   backend:
-      build:
-        context: ./backend
-        dockerfile: Dockerfile
-      env_file: ./backend/.env
-      environment:
-        DB_HOST: db
-        PORT: 3000
-      ports:
-        - "${BACKEND_PORT:-3001}:3000"
-      depends_on:
-        db:
-          condition: service_healthy
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: hypertube_backend
+    env_file: ./backend/.env
+    environment:
+      DB_HOST: db
+      PORT: 3000
+    ports:
+      - "${BACKEND_PORT:-3001}:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+      jackett:
+        condition: service_started
+    networks:
+      - hypertube-net
 
+  jackett:
+    image: lscr.io/linuxserver/jackett:latest
+    container_name: jackett
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+      - RUN_OPTS=--ListenPublic
+    volumes:
+      - ./jackett_config:/config
+      - ./jackett_downloads:/downloads
+    ports:
+      - "9117:9117"
+    networks:
+      - hypertube-net
+    restart: unless-stopped
+
+networks:
+  hypertube-net:
+    driver: bridge
 
 volumes:
   postgres_data:
