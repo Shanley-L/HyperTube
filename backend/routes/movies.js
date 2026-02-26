@@ -1,36 +1,62 @@
 import express from 'express';
+import axios from 'axios';
 
 const router = express.Router();
 
 router.get('/search', async (req, res) => {
     const { q } = req.query;
-    if (!q) return res.status(400).json({ error: "Le paramètre 'q' est requis." });
-
-    // Construction propre de l'URL pour Jackett
-    const url = new URL('http://172.18.0.2:9117/api/v2.0/indexers/all/results');
-    url.searchParams.append('apikey', process.env.JACKETT_API_KEY);
-    url.searchParams.append('Query', q);
-    [2000, 2010, 2040, 2045].forEach(c => url.searchParams.append('Category[]', c));
+    if (!q) return res.status(400).json({ error: "Recherche vide" });
 
     try {
-        const response = await fetch(url.toString());
-        if (!response.ok) throw new Error(`Jackett a répondu: ${response.status}`);
+        // 1. Trouver le film précis sur TMDB pour avoir l'ID IMDb et l'affiche
+        const tmdbUrl = `https://api.themoviedb.org/3/search/movie?api_key=${process.env.TMDB_API_KEY}&query=${encodeURIComponent(q)}&language=fr-FR`;
         
-        const data = await response.json();
+        console.log("URL TMDB testée :", tmdbUrl);
         
-        const movies = data.Results.map(item => ({
-            title: item.Title,
-            size: item.Size,
-            seeders: item.Seeders,
-            magnet: item.MagnetUri || item.Link,
-            imdbId: item.ImdbId ? `tt${item.ImdbId}` : null
-        })).sort((a, b) => a.title.localeCompare(b.title));
+        const tmdbRes = await fetch(tmdbUrl);
+        const tmdbData = await tmdbRes.json();
 
-        res.json(movies);
+        // Vérification cruciale : est-ce qu'on a au moins un résultat ?
+        if (!tmdbData.results || tmdbData.results.length === 0) {
+            return res.status(404).json({ error: "Aucun film trouvé sur TMDB" });
+        }
+
+        const bestMatch = tmdbData.results[0];
+        if (!bestMatch) return res.json([]);
+
+        // 2. Récupérer l'ID IMDb (indispensable pour Jackett)
+        const idUrl = `https://api.themoviedb.org/3/movie/${bestMatch.id}/external_ids?api_key=${process.env.TMDB_API_KEY}`;
+        const idRes = await fetch(idUrl);
+        const ids = await idRes.json();
+
+        // 3. Lancer Jackett uniquement sur cet ID précis (Zéro erreur possible)
+        const searchQuery = `${bestMatch.title} ${bestMatch.release_date?.split('-')[0]}`;
+        const jackettUrl = `http://localhost:9117/api/v2.0/indexers/all/results?apikey=${process.env.JACKETT_API_KEY}&Query=${encodeURIComponent(searchQuery)}`;
+        const jackettRes = await fetch(jackettUrl);
+        const jackettData = await jackettRes.json();
+
+        // 4. On renvoie un objet propre : Infos TMDB + Torrents Jackett
+        res.json({
+            info: {
+                title: bestMatch.title,
+                poster: `https://image.tmdb.org/t/p/w500${bestMatch.poster_path}`,
+                year: bestMatch.release_date?.split('-')[0],
+                overview: bestMatch.overview,
+                lastWatching: null
+            },
+            torrents: jackettData.Results.slice(0, 10).map(t => ({
+                title: t.Title,
+                seeders: t.Seeders,
+                size: t.Size,
+                magnet: t.MagnetUri || t.Link
+            }))
+        });
+
     } catch (error) {
-        console.error("Erreur Jackett:", error.message);
-        res.status(500).json({ error: "Erreur interne" });
+        console.error(error);
+        res.status(500).json({ error: "Erreur de recherche combinée" });
     }
 });
 
 export default router;
+
