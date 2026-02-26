@@ -22,6 +22,15 @@ header {
   background-color: #000000;
   color: rgb(245, 131, 0);
   padding: 1rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
 }
 
 main {

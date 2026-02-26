@@ -4,15 +4,15 @@ import LoginPage from './pages/Login.jsx';
 import RegisterPage from './pages/Register.jsx'
 import ForgotPasswordPage from './pages/ForgotPassword.jsx';
 import ResetPasswordPage from './pages/ResetPassword.jsx';
+import Header from './components/Header.jsx';
+import AuthCallBackPage from './pages/AuthCallBack.jsx';
 
 function App() {
   return (
     <AuthProvider>
       <Router>
         <div className="app">
-          <header>
-            <h1>HyperTube</h1>
-          </header>
+          <Header/>
           <main>
             <Routes>
               <Route path="/" element={<div>Home Page</div>} />
@@ -23,7 +23,7 @@ function App() {
               <Route path="/reset-password" element={<ResetPasswordPage />} />
               {/* <Route path="/profile" element={<ProfilePage />} /> */}
               {/* <Route path="/logout" element={<LogoutPage />} /> */}
-              {/* <Route path="/auth/callback" element={<AuthCallbackPage />} /> */}
+              <Route path="/auth/callback" element={<AuthCallBackPage />} />
             </Routes>
           </main>
           <footer>
