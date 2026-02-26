@@ -9,6 +9,7 @@ import passport from './config/passport.js';
 import authRoutes from './routes/auth.js';
 import videoRouter from './routes/video.js';
 import { ApiRoutes } from './config/resourceNames.js';
+import './cron/cleanup.js';
 
 dotenv.config();
 

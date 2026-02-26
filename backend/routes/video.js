@@ -10,44 +10,20 @@ router.get(ApiRoutes.Stream, (req, res) => {
     const magnetHash = req.params.id;
     const magnetLink = `magnet:?xt=urn:btih:${magnetHash}`;
 
-    if (!activeEngines[magnetHash]) {
+    if (!activeEngines[magnetHash])
         activeEngines[magnetHash] = torrentStream(magnetLink, { path: './downloads' });
-    }
 
     const engine = activeEngines[magnetHash];
 
     const startStreaming = () => {
-        const file = engine.files.reduce((prev, curr) => prev.length > curr.length ? prev : curr);
+        const file = engine.files.reduce((prev, curr) =>
+			prev.length > curr.length ? prev : curr);
         const isMp4 = file.name.endsWith('.mp4');
         
         console.log(`🎬 Target file: ${file.name} | Transcoding: ${!isMp4}`);
 
-        if (isMp4) {
-            const fileSize = file.length;
-            const range = req.headers.range;
-
-            if (range) {
-                const parts = range.replace(/bytes=/, "").split("-");
-                const start = parseInt(parts[0], 10);
-                const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
-                const chunksize = (end - start) + 1;
-
-                res.writeHead(206, {
-                    'Content-Range': `bytes ${start}-${end}/${fileSize}`,
-                    'Accept-Ranges': 'bytes',
-                    'Content-Length': chunksize,
-                    'Content-Type': 'video/mp4',
-                });
-                file.createReadStream({ start, end }).pipe(res);
-            }
-			else {
-                res.writeHead(200, {
-                    'Content-Length': fileSize,
-                    'Content-Type': 'video/mp4',
-                });
-                file.createReadStream().pipe(res);
-            }
-        }
+        if (isMp4)
+            handleMp4Streaming(file, req, res);
 		else {
             res.writeHead(200, {
                 'Content-Type': 'video/mp4',
@@ -71,20 +47,51 @@ router.get(ApiRoutes.Stream, (req, res) => {
         }
     };
 
-    // Use our helper but pass startStreaming as a callback
-    setupEngineListeners(engine, startStreaming);
+    // setupEngineListeners(engine, startStreaming);
 
-    if (engine.files && engine.files.length > 0) {
+    if (engine.files && engine.files.length > 0)
         startStreaming();
-    } else {
-        // We use .once to ensure it only fires once per request
+	else
         engine.once('ready', startStreaming);
-    }
+
+	res.on('close', () => {
+		console.log("Client disconnected.");
+		// engine.destroy(); // kills the engine immediately ()
+	});
 });
 
+function handleMp4Streaming(file, req, res) {
+	const fileSize = file.length;
+	const range = req.headers.range;
+
+	if (range) {
+		const parts = range.replace(/bytes=/, "").split("-");
+		const start = parseInt(parts[0], 10);
+		const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+		const chunksize = (end - start) + 1;
+
+		res.writeHead(206, {
+			'Content-Range': `bytes ${start}-${end}/${fileSize}`,
+			'Accept-Ranges': 'bytes',
+			'Content-Length': chunksize,
+			'Content-Type': 'video/mp4',
+		});
+		file.createReadStream({ start, end }).pipe(res);
+	}
+	else {
+		res.writeHead(200, {
+			'Content-Length': fileSize,
+			'Content-Type': 'video/mp4',
+		});
+		file.createReadStream().pipe(res);
+	}
+}
+
+// Listeners to log metadata and peer connections
+// TEST ONLY
 function setupEngineListeners(engine, callback) {
-    // Check if we've already attached these to avoid log spam
-    if (engine.hasCustomListeners) return;
+    if (engine.hasCustomListeners)
+		return;
     engine.hasCustomListeners = true;
 
     engine.on('torrent', () => {
