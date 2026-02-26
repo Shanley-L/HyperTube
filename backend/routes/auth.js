@@ -33,7 +33,7 @@ router.post('/forgot-password', validate([
   body('email').isEmail().withMessage('Invalid email'),
 ]), AuthController.forgotPassword);
 
-router.post('/reset-password/:token', validate([
+router.post('/reset-password', validate([
   body('newPassword').isLength({ min: 8 }).withMessage('Password must be at least 8 characters long'),
 ]), AuthController.resetPassword);
 
