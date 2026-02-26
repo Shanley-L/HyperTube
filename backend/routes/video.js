@@ -2,11 +2,12 @@ import express from 'express';
 import torrentStream from 'torrent-stream';
 import ffmpeg from 'fluent-ffmpeg';
 import { ApiRoutes } from '../config/resourceNames.js';
+import authMiddleware from '../middlewares/auth.js'; 
 
 const router = express.Router();
 const activeEngines = {};
 
-router.get(ApiRoutes.Stream, (req, res) => {
+router.get(ApiRoutes.Stream, authMiddleware, (req, res) => {
     const magnetHash = req.params.id;
     const magnetLink = `magnet:?xt=urn:btih:${magnetHash}`;
 

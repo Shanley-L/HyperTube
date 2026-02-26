@@ -13,8 +13,8 @@ const MoviePage = () => {
         setMovie({
           title: "Interstellar",
           year: "2014",
-          rating: "8.7/10",
-          runtime: "2h 49min",
+          rating: "8.7/10", //optionnel
+          runtime: "2h 49min", 
           genres: ["Adventure", "Drama", "Sci-Fi"],
           director: "Christopher Nolan",
           cast: "Matthew McConaughey, Anne Hathaway, Jessica Chastain",

@@ -8,6 +8,7 @@ import pool from './config/database.js';
 import passport from './config/passport.js';
 import authRoutes from './routes/auth.js';
 import videoRouter from './routes/video.js';
+import commentRoutes from './routes/comments.js';
 import { ApiRoutes } from './config/resourceNames.js';
 import './cron/cleanup.js';
 
@@ -35,6 +36,7 @@ const limiter = rateLimit({
 
 app.use(ApiRoutes.API, limiter);
 app.use(ApiRoutes.Video, videoRouter);
+app.use(ApiRoutes.Comments, commentRoutes);
 
 app.get(ApiRoutes.Health, (req, res) => {
   res.json({ status: 'ok', message: 'HyperTube API is running' });
