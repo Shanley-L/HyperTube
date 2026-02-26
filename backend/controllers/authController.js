@@ -2,7 +2,7 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { createUser, findByUsername, findByEmail, findByResetToken, updateResetToken, updatePassword } from '../models/user.js';
-// import { sendEmail } from '../utils/email.js';
+import { sendResetEmail } from '../utils/email.js';
 
 const AuthController = {
   register: async (req, res) => {
@@ -31,12 +31,12 @@ const AuthController = {
     const expires = new Date(Date.now() + 3600000);
     await updateResetToken(user.id, token, expires);
     const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
-    // await sendEmail(email, 'Reset Password', resetUrl);
+    await sendResetEmail(email, 'Reset Password', resetUrl);
     res.json({ message: 'Password reset email sent' });
   },
   resetPassword: async (req, res)=> {
-    const token = req.params.token;
-    const { newPassword } = req.body;
+    const { newPassword, token } = req.body;
+    console.log("PASS : ", newPassword, "TOKEN :", token)
     const user = await findByResetToken(token);
     if (!user) return res.status(404).json({ message: 'Invalid or expired token' });
     if (user.reset_password_expires < new Date()) return res.status(400).json({ message: 'Token expired' });
