@@ -156,11 +156,14 @@ footer {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
-.login-page h1,
-.register-page h1 {
+.header-title-button {
   color: rgb(245, 131, 0);
-  margin-bottom: 1.5rem;
   text-align: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: inherit;
+  padding: 0;
 }
 
 .login-page .form-group,
