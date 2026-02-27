@@ -1,28 +1,26 @@
 import { useAuth } from "../contexts/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import ProfileModal from "./ProfilModal.jsx";
-
-
 
 function Header() {
   const { user, logout, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
 
   useEffect(() => {
-    if (!user && location.pathname !== '/login' && location.pathname !== '/register') {
+    const isPublicRoute = location.pathname === '/login' || location.pathname === '/register';
+    if (!isAuthenticated && !isPublicRoute) {
       navigate('/login');
     }
-    console.log(location.pathname);
-    console.log(user);
-  }, [user, navigate]);
+  }, [isAuthenticated, location.pathname, navigate]);
   
   useEffect(() => {
     function handleClickOutside(event) {
-      if (dropdownRef.current && !dropdownRef.currentcontains(event.target))
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target))
         setDropdownOpen(false);
     }
     document.addEventListener('mousedown', handleClickOutside);

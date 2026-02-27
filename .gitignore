@@ -22,4 +22,6 @@ temp/
 coverage/
 .nyc_output/
 .cursor/
-*/package-lock
+package-lock.json
+jackett_config/
+jackett_downloads/
