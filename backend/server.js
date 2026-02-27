@@ -7,6 +7,7 @@ import rateLimit from 'express-rate-limit';
 import pool from './config/database.js';
 import passport from './config/passport.js';
 import authRoutes from './routes/auth.js';
+import userRoutes from './routes/users.js';
 
 dotenv.config();
 
@@ -45,6 +46,7 @@ app.get('/api/db/health', async (req, res) => {
 });
 
 app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

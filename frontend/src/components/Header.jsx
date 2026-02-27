@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import ProfileModal from "./ProfilModal.jsx";
 
 
+
 function Header() {
   const { user, logout, isAuthenticated } = useAuth();
   const navigate = useNavigate();
@@ -12,9 +13,11 @@ function Header() {
   const dropdownRef = useRef(null);
 
   useEffect(() => {
-    if (!user) {
+    if (!user && location.pathname !== '/login' && location.pathname !== '/register') {
       navigate('/login');
     }
+    console.log(location.pathname);
+    console.log(user);
   }, [user, navigate]);
   
   useEffect(() => {
