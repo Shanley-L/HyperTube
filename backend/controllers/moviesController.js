@@ -6,6 +6,33 @@ const GENRES_MAP = {
 };
 
 const moviesController = {
+    getPosters: async (req, res) => {
+        try {
+            const apiKey = process.env.TMDB_API_KEY;
+            if (!apiKey || apiKey.trim() === '') {
+                console.warn("getPosters: TMDB_API_KEY absente ou vide dans .env");
+                return res.json([]);
+            }
+            const url = `https://api.themoviedb.org/3/movie/popular?api_key=${apiKey}&language=fr-FR&page=1`;
+            const response = await fetch(url);
+            const data = await response.json();
+            if (!response.ok) {
+                console.warn("getPosters: TMDb erreur", response.status, data.status_message || data);
+                return res.json([]);
+            }
+            const results = Array.isArray(data.results) ? data.results : [];
+            const posters = results
+                .filter((movie) => movie && movie.poster_path)
+                .map((movie) => `https://image.tmdb.org/t/p/w300${movie.poster_path}`);
+            if (posters.length === 0) {
+                console.warn("getPosters: aucun poster (results:", results.length, ", keys reçues:", data ? Object.keys(data) : "null", ")");
+            }
+            res.json(posters);
+        } catch (error) {
+            console.warn("getPosters:", error.message);
+            res.json([]);
+        }
+    },
     search: async (req, res) => {
         const { q } = req.query;
         if (!q) return res.status(400).json({ error: "Recherche vide" });
