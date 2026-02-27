@@ -12,13 +12,17 @@ function Header() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
 
-  useEffect(() => {
-    if (!user && location.pathname !== '/login' && location.pathname !== '/register') {
-      navigate('/login');
-    }
-    console.log(location.pathname);
-    console.log(user);
-  }, [user, navigate]);
+	// Shanley tu pues la merde wallah
+	
+  // useEffect(() => {
+  //   if (!user && location.pathname !== '/login' && location.pathname !== '/register') {
+	// 		console.log(`User : ${user}, current path : ${location.pathname}`, user, location.pathname);
+  //     navigate('/login');
+  //   }
+	// 		console.log(`User : ${user}, current path : ${location.pathname}`);
+  //   console.log(location.pathname);
+  //   console.log(user);
+  // }, [user, navigate]);
   
   useEffect(() => {
     function handleClickOutside(event) {

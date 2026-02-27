@@ -15,11 +15,11 @@ function LoginPage() {
   const [error, setError] = useState(null);
   const [fieldErrors, setFieldErrors] = useState({})
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      navigate('/movies');
-    }
-  }, [isAuthenticated, navigate]);
+//   useEffect(() => {
+//     if (isAuthenticated) {
+//       navigate('/movies');
+//     }
+//   }, [isAuthenticated, navigate]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
