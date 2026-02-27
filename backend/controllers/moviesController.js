@@ -1,3 +1,5 @@
+import { response } from "express";
+
 const GENRES_MAP = {
     28: "Action", 12: "Aventure", 16: "Animation", 35: "Comédie", 80: "Crime",
     99: "Documentaire", 18: "Drame", 10751: "Familial", 14: "Fantastique",
@@ -24,44 +26,59 @@ const moviesController = {
                 return res.status(404).json({ error: "Aucun film trouvé sur TMDB" });
             }
 
-            const bestMatch = tmdbData.results[0];
-            if (!bestMatch) return res.json([]);
+            console.log(tmdbData.results)
 
-            // 2. Récupérer l'ID IMDb (indispensable pour Jackett)
-            const idUrl = `https://api.themoviedb.org/3/movie/${bestMatch.id}/external_ids?api_key=${process.env.TMDB_API_KEY}`;
-            const idRes = await fetch(idUrl);
-            const ids = await idRes.json();
-
-            // 3. Lancer Jackett uniquement sur cet ID précis (Zéro erreur possible)
-            const searchQuery = `${bestMatch.title} ${bestMatch.release_date?.split('-')[0]}`;
-            const jackettUrl = `http://localhost:9117/api/v2.0/indexers/all/results?apikey=${process.env.JACKETT_API_KEY}&Query=${encodeURIComponent(searchQuery)}`;
-            const jackettRes = await fetch(jackettUrl);
-            const jackettData = await jackettRes.json();
-
-            // 4. On renvoie un objet propre : Infos TMDB + Torrents Jackett
-            res.json({
-                info: {
-                    title: bestMatch.title,
-                    poster: `https://image.tmdb.org/t/p/w500${bestMatch.poster_path}`,
-                    year: bestMatch.release_date?.split('-')[0],
-                    rating: Math.round(bestMatch.vote_average * 10) / 10,
-                    genres: bestMatch.genre_ids.map(id => GENRES_MAP[id]).filter(Boolean),
-                    overview: bestMatch.overview,
-                    watched: null
-                },
-                torrents: jackettData.Results.slice(0, 10).map(t => ({
-                    title: t.Title,
-                    seeders: t.Seeders,
-                    size: t.Size,
-                    magnet: t.MagnetUri || t.Link
-                }))
-            });
+            return res.status(200).json(tmdbData.results)
 
         } catch (error) {
             console.error(error);
             res.status(500).json({ error: "Erreur de recherche combinée" });
         }
+    },
+select: async (req, res) => {
+    // 1. Correction du nom (doit matcher ton Axios : selectMovieid)
+    const { selectMovieid } = req.body; 
+    console.log("ID reçu :", selectMovieid);
+    
+    if (!selectMovieid) return res.status(400).json({ error: "ID manquant" });
+
+    try {
+        // 2. RECUPERER LES INFOS DU FILM (car tu n'as que l'ID)
+        const movieRes = await fetch(`https://api.themoviedb.org/3/movie/${selectMovieid}?api_key=${process.env.TMDB_API_KEY}&language=fr-FR`);
+        const movieData = await movieRes.json();
+
+        // 3. Récupérer l'ID IMDb
+        const idRes = await fetch(`https://api.themoviedb.org/3/movie/${selectMovieid}/external_ids?api_key=${process.env.TMDB_API_KEY}`);
+        const ids = await idRes.json();
+
+        // 4. Lancer Jackett (On utilise le titre propre de TMDB)
+        const searchQuery = `${movieData.title} ${movieData.release_date?.split('-')[0]}`;
+        const jackettUrl = `http://localhost:9117/api/v2.0/indexers/all/results?apikey=${process.env.JACKETT_API_KEY}&Query=${encodeURIComponent(searchQuery)}`;
+        const jackettRes = await fetch(jackettUrl);
+        const jackettData = await jackettRes.json();
+
+        // 5. Réponse propre
+        return res.json({
+            info: {
+                title: movieData.title,
+                poster: `https://image.tmdb.org/t/p/w500${movieData.poster_path}`,
+                year: movieData.release_date?.split('-')[0],
+                rating: Math.round(movieData.vote_average * 10) / 10,
+                genres: movieData.genres.map(g => g.name), // TMDB donne déjà les noms ici !
+                overview: movieData.overview
+            },
+            torrents: jackettData.Results.slice(0, 10).map(t => ({
+                title: t.Title,
+                seeders: t.Seeders,
+                size: (t.Size / (1024**3)).toFixed(2) + " GB",
+                magnet: t.MagnetUri || t.Link
+            }))
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Erreur lors de la sélection" });
     }
+}
 }
 
 export default moviesController;
