@@ -11,6 +11,9 @@ import videoRouter from './routes/video.js';
 import commentRoutes from './routes/comments.js';
 import { ApiRoutes } from './config/resourceNames.js';
 import './cron/cleanup.js';
+import moviesRoutes from './routes/movies.js';
+
+import userRoutes from './routes/users.js';
 
 dotenv.config();
 
@@ -56,6 +59,9 @@ app.get(ApiRoutes.DBHealth, async (req, res) => {
 });
 
 app.use(ApiRoutes.Auth, authRoutes);
+app.use('/api/users', userRoutes);
+
+app.use('/api/movies', moviesRoutes);
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
