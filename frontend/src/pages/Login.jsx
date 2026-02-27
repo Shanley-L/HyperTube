@@ -17,7 +17,7 @@ function LoginPage() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/');
+      navigate('/movies');
     }
   }, [isAuthenticated, navigate]);
 
@@ -37,9 +37,9 @@ function LoginPage() {
 
     try {
       const response = await api.post('/auth/login', formData);
-      if (response.status === 2000 && response.data.token) {
+      if (response.status === 200 && response.data.token) {
         login(response.data.token);
-        navigate('/');
+        navigate('/movies');
       }
     } catch (error) {
       if (error.response?.data?.errors) {

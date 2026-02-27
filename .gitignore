@@ -22,3 +22,4 @@ temp/
 coverage/
 .nyc_output/
 .cursor/
+*/package-lock

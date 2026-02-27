@@ -9,6 +9,7 @@ import passport from './config/passport.js';
 import authRoutes from './routes/auth.js';
 import moviesRoutes from './routes/movies.js';
 
+import userRoutes from './routes/users.js';
 
 dotenv.config();
 
@@ -47,6 +48,7 @@ app.get('/api/db/health', async (req, res) => {
 });
 
 app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
 
 app.use('/api/movies', moviesRoutes);
 
