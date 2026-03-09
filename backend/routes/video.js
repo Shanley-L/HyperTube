@@ -26,6 +26,19 @@ router.get(ApiRoutes.Stream, (req, res) => {
     const startStreaming = () => {
         const file = engine.files.reduce((prev, curr) =>
 			prev.length > curr.length ? prev : curr);
+
+		// This is the "Magic" part for streaming
+		// It tells the engine to focus all its power on the pieces 
+		// needed for the current read stream.
+		file.select(); 
+		
+		// Some versions of torrent-stream support this to force 
+		// the swarm to prioritize the file we are currently reading.
+		if (typeof engine.setPriority === 'function') {
+			console.log("It is a  function :D");
+			engine.setPriority(file.name, 1);
+    }
+		
         const isMp4 = file.name.endsWith('.mp4');
 
         console.log(`🎬 Target file: ${file.name} | Transcoding: ${!isMp4}`);
@@ -135,8 +148,11 @@ function setupEngineListeners(engine, callback) {
     const interval = setInterval(() => {
         if (engine.swarm) {
             const connected = engine.swarm.wires.length;
+			const progress = (engine.swarm.downloaded / file.length * 100).toFixed(2);
+       		console.log(`📊 Total Download Progress: ${progress}% | Speed: ${engine.swarm.downloadSpeed()} bps`);
             console.log(`📡 Connected peers: ${connected}`);
-            if (connected > 0) clearInterval(interval); 
+            if (connected > 0)
+				clearInterval(interval); 
         }
     }, 3000);
 }
