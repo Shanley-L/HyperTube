@@ -1,9 +1,23 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import '../pages/movies.css'
 import api from "../services/api";
 
 export default function MovieTest() {
   const [query, setQuery] = useState('');
   const [movies, setMovies] = useState([]);
+
+  useEffect(() => {
+    discoverMovies();
+  }, []);
+
+  const discoverMovies = async () => {
+    try {
+      const res = await api.get(`movies/discover`);
+      setMovies(res.data);
+    } catch (err) {
+      console.error("Erreur de découverte", err);
+    }
+  }
 
   const handleSearch = async () => {
     try {
@@ -28,25 +42,27 @@ export default function MovieTest() {
   }
 
   return (
-    <div style={{ padding: '20px' }}>
-      <input 
-        value={query} 
-        onChange={(e) => setQuery(e.target.value)} 
-        placeholder="Chercher un film..." 
-      />
-      <button onClick={handleSearch}>Rechercher</button>
+    <div style={{ padding: '20px', textAlign: 'center' }}>
+      <div className="search-bar">
+        <input className="search-input" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Chercher un film..." />
+        <button className="search-btn" onClick={handleSearch}>Rechercher</button>
+      </div>
 
-      <ul>
-        {movies.map((movie, index) => (
-          <li key={index}>
+      <ul className="movie-grid" style={{ padding: 0, marginTop: '20px' }}>
+        {movies.map((movie) => (
+          <li className="movie-card" key={movie.id}>
             <img 
               src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`} 
-              alt={movie.title}
-              onClick={() => handleMovieClick(movie.id)}
-              className="rounded-lg shadow-md"
-              style={{ maxWidth: '300px', width: '100%', height: 'auto' }}
+              onClick={() => handleMovieClick(movie.id)} 
+              className="movie-poster" 
             />
-            <strong>{movie.title}</strong>
+            <div className="movie-info">
+              <h3 className="movie-title">{movie.title}</h3>
+              <div className="movie-meta">
+                <span>{movie.release_date?.split('-')[0]}</span>
+                <span className="movie-rating">⭐ {Math.round(movie.vote_average * 10) / 10}</span>
+              </div>
+            </div>
           </li>
         ))}
       </ul>

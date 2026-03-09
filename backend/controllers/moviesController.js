@@ -8,6 +8,17 @@ const GENRES_MAP = {
 };
 
 const moviesController = {
+    discover: async (req, res) => {
+        try {
+            const tmdbUrl = `https://api.themoviedb.org/3/discover/movie?api_key=${process.env.TMDB_API_KEY}&language=fr-FR&sort_by=popularity.desc&page=1`;
+            const tmdbRes = await fetch(tmdbUrl);
+            const tmdbData = await tmdbRes.json();
+            return res.status(200).json(tmdbData.results);
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({ error: "Erreur de découverte" });
+        }
+    },
     search: async (req, res) => {
         const { q } = req.query;
         if (!q) return res.status(400).json({ error: "Recherche vide" });
@@ -35,50 +46,50 @@ const moviesController = {
             res.status(500).json({ error: "Erreur de recherche combinée" });
         }
     },
-select: async (req, res) => {
-    // 1. Correction du nom (doit matcher ton Axios : selectMovieid)
-    const { selectMovieid } = req.body; 
-    console.log("ID reçu :", selectMovieid);
-    
-    if (!selectMovieid) return res.status(400).json({ error: "ID manquant" });
+    select: async (req, res) => {
+        // 1. Correction du nom (doit matcher ton Axios : selectMovieid)
+        const { selectMovieid } = req.body; 
+        console.log("ID reçu :", selectMovieid);
+        
+        if (!selectMovieid) return res.status(400).json({ error: "ID manquant" });
 
-    try {
-        // 2. RECUPERER LES INFOS DU FILM (car tu n'as que l'ID)
-        const movieRes = await fetch(`https://api.themoviedb.org/3/movie/${selectMovieid}?api_key=${process.env.TMDB_API_KEY}&language=fr-FR`);
-        const movieData = await movieRes.json();
+        try {
+            // 2. RECUPERER LES INFOS DU FILM (car tu n'as que l'ID)
+            const movieRes = await fetch(`https://api.themoviedb.org/3/movie/${selectMovieid}?api_key=${process.env.TMDB_API_KEY}&language=fr-FR`);
+            const movieData = await movieRes.json();
 
-        // 3. Récupérer l'ID IMDb
-        const idRes = await fetch(`https://api.themoviedb.org/3/movie/${selectMovieid}/external_ids?api_key=${process.env.TMDB_API_KEY}`);
-        const ids = await idRes.json();
+            // 3. Récupérer l'ID IMDb
+            const idRes = await fetch(`https://api.themoviedb.org/3/movie/${selectMovieid}/external_ids?api_key=${process.env.TMDB_API_KEY}`);
+            const ids = await idRes.json();
 
-        // 4. Lancer Jackett (On utilise le titre propre de TMDB)
-        const searchQuery = `${movieData.title} ${movieData.release_date?.split('-')[0]}`;
-        const jackettUrl = `http://localhost:9117/api/v2.0/indexers/all/results?apikey=${process.env.JACKETT_API_KEY}&Query=${encodeURIComponent(searchQuery)}`;
-        const jackettRes = await fetch(jackettUrl);
-        const jackettData = await jackettRes.json();
+            // 4. Lancer Jackett (On utilise le titre propre de TMDB)
+            const searchQuery = `${movieData.title} ${movieData.release_date?.split('-')[0]}`;
+            const jackettUrl = `http://localhost:9117/api/v2.0/indexers/all/results?apikey=${process.env.JACKETT_API_KEY}&Query=${encodeURIComponent(searchQuery)}`;
+            const jackettRes = await fetch(jackettUrl);
+            const jackettData = await jackettRes.json();
 
-        // 5. Réponse propre
-        return res.json({
-            info: {
-                title: movieData.title,
-                poster: `https://image.tmdb.org/t/p/w500${movieData.poster_path}`,
-                year: movieData.release_date?.split('-')[0],
-                rating: Math.round(movieData.vote_average * 10) / 10,
-                genres: movieData.genres.map(g => g.name), // TMDB donne déjà les noms ici !
-                overview: movieData.overview
-            },
-            torrents: jackettData.Results.slice(0, 10).map(t => ({
-                title: t.Title,
-                seeders: t.Seeders,
-                size: (t.Size / (1024**3)).toFixed(2) + " GB",
-                magnet: t.MagnetUri || t.Link
-            }))
-        });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: "Erreur lors de la sélection" });
+            // 5. Réponse propre
+            return res.json({
+                info: {
+                    title: movieData.title,
+                    poster: `https://image.tmdb.org/t/p/w500${movieData.poster_path}`,
+                    year: movieData.release_date?.split('-')[0],
+                    rating: Math.round(movieData.vote_average * 10) / 10,
+                    genres: movieData.genres.map(g => g.name), // TMDB donne déjà les noms ici !
+                    overview: movieData.overview
+                },
+                torrents: jackettData.Results.slice(0, 10).map(t => ({
+                    title: t.Title,
+                    seeders: t.Seeders,
+                    size: (t.Size / (1024**3)).toFixed(2) + " GB",
+                    magnet: t.MagnetUri || t.Link
+                }))
+            });
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({ error: "Erreur lors de la sélection" });
+        }
     }
-}
 }
 
 export default moviesController;
