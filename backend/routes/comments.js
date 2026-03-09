@@ -16,7 +16,8 @@ router.get('/:movieId', async (req, res) => {
             [movieId]
         );
         res.json(result.rows);
-    } catch (err) {
+    }
+	catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
@@ -39,7 +40,8 @@ router.post('/', authMiddleware, async (req, res) => {
         );
 
         res.status(201).json(fullComment.rows[0]);
-    } catch (err) {
+    }
+	catch (err) {
         res.status(500).json({ error: err.message });
     }
 });

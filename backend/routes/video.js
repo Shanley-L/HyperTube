@@ -12,7 +12,14 @@ router.get(ApiRoutes.Stream, (req, res) => {
     const magnetLink = `magnet:?xt=urn:btih:${magnetHash}`;
 
     if (!activeEngines[magnetHash])
-        activeEngines[magnetHash] = torrentStream(magnetLink, { path: './downloads' });
+        activeEngines[magnetHash] = torrentStream(magnetLink, {
+		path: './downloads',
+		trackers: [
+			'udp://tracker.opentrackr.org:1337/announce',
+			'udp://9.rarbg.com:2810/announce',
+			'udp://tracker.openbittorrent.com:6969/announce'
+		]
+});
 
     const engine = activeEngines[magnetHash];
 
@@ -20,35 +27,48 @@ router.get(ApiRoutes.Stream, (req, res) => {
         const file = engine.files.reduce((prev, curr) =>
 			prev.length > curr.length ? prev : curr);
         const isMp4 = file.name.endsWith('.mp4');
-        
+
         console.log(`🎬 Target file: ${file.name} | Transcoding: ${!isMp4}`);
 
         if (isMp4)
             handleMp4Streaming(file, req, res);
 		else {
-            res.writeHead(200, {
-                'Content-Type': 'video/mp4',
-                'Connection': 'keep-alive',
-                'Transfer-Encoding': 'chunked'
-            });
+			console.log("⏳ Waiting for initial buffer...");
+			
+			// We wait until we have at least 1MB or some pieces before starting FFmpeg
+			const stream = file.createReadStream();
 
-            ffmpeg(file.createReadStream())
-                .videoCodec('libx264')
-                .audioCodec('aac')
-                .format('mp4')
-                .outputOptions([
-                    '-movflags frag_keyframe+empty_moov',
-                    '-pix_fmt yuv420p',
-                    '-preset ultrafast'
-                ])
-                .on('error', (err) => {
-                    console.log('FFmpeg Error:', err.message);
-                })
-                .pipe(res, { end: true });
-        }
+			res.writeHead(200, {
+				'Content-Type': 'video/mp4',
+				'Connection': 'keep-alive',
+				'Transfer-Encoding': 'chunked'
+			});
+
+			ffmpeg(stream)
+				.videoCodec('libx264')
+				.audioCodec('aac')
+				.format('mp4')
+				.outputOptions([
+					'-movflags frag_keyframe+empty_moov+default_base_moof+faststart', 
+					'-pix_fmt yuv420p',
+					'-preset ultrafast',
+					'-tune zerolatency',
+					'-probesize 32',
+					'-analyzeduration 0',
+					'-threads 0'
+
+				])
+				.on('start', (cmd) => console.log("🚀 FFmpeg started"))
+				.on('error', (err) => {
+					if (err.message !== 'Output stream closed') {
+						console.log('FFmpeg Error:', err.message);
+					}
+				})
+				.pipe(res, { end: true });
+		}
     };
 
-    // setupEngineListeners(engine, startStreaming);
+    setupEngineListeners(engine, startStreaming);
 
     if (engine.files && engine.files.length > 0)
         startStreaming();
@@ -59,6 +79,19 @@ router.get(ApiRoutes.Stream, (req, res) => {
 		console.log("Client disconnected.");
 		// engine.destroy(); // kills the engine immediately ()
 	});
+});
+
+// Test only, remove in production
+router.get('/status/:id', (req, res) => {
+    const engine = activeEngines[req.params.id];
+    if (!engine)
+		return res.status(404).json({ message: "No active stream" });
+
+    res.json({
+        peers: engine.swarm.wires.length,
+        downloaded: engine.swarm.downloaded,
+        speed: engine.swarm.downloadSpeed(),
+    });
 });
 
 function handleMp4Streaming(file, req, res) {

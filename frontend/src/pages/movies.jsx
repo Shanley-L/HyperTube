@@ -1,10 +1,14 @@
 import { useState } from 'react';
 import api from "../services/api";
+import { useNavigate } from 'react-router-dom';
+
 
 export default function MovieTest() {
-  const [query, setQuery] = useState('');
-  const [movies, setMovies] = useState([]);
-
+	const [query, setQuery] = useState('');
+	const [movies, setMovies] = useState([]);
+	
+	const navigate = useNavigate();
+	
   const handleSearch = async () => {
     try {
       const res = await api.get(`movies/search?q=${query}`);
@@ -21,6 +25,7 @@ export default function MovieTest() {
             selectMovieid: movieId // L'ID passe dans le body
         });
       console.log(response.data);
+	  navigate(`/movie/${movieId}`);
       
     } catch (error) {
       console.error("Error while fetching movie")
