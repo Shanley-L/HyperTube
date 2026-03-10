@@ -39,7 +39,11 @@ export default function MovieTest() {
       const response = await api.post('movies/select', {
             selectMovieid: movieId // L'ID passe dans le body
         });
+      const addWatched = await api.post('movies/watched', {
+            selectMovieid: movieId // L'ID passe dans le body
+        });
       console.log(response.data);
+      console.log(addWatched.data);
       
     } catch (error) {
       console.error("Error while fetching movie")
@@ -60,12 +64,18 @@ export default function MovieTest() {
 
       <ul className="movie-grid" style={{ padding: 0, marginTop: '20px' }}>
         {movies.map((movie) => (
-          <li className="movie-card" key={movie.id}>
-            <img 
-              src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`} 
-              onClick={() => handleMovieClick(movie.id)} 
-              className="movie-poster" 
-            />
+          <li 
+              key={movie.id} 
+              className={`movie-card ${movie.isWatched ? 'watched' : ''}`}
+            >
+              <div className="poster-container">
+                <img 
+                  src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`} 
+                  className="movie-poster" 
+                  onClick={() => handleMovieClick(movie.id)} 
+                />
+                {movie.isWatched && <span className="watched-badge">✔ Vu</span>}
+              </div>
             <div className="movie-info">
               <h3 className="movie-title">{movie.title}</h3>
               <div className="movie-meta">

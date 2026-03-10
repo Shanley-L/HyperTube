@@ -4,10 +4,11 @@ import moviesController from '../controllers/moviesController.js';
 
 const router = express.Router();
 
-router.get('/discover', moviesController.discover)
-router.get('/search', moviesController.search)
-router.post('/select', moviesController.select)
-router.get('/posters', moviesController.getPosters);
+router.get('/discover', authMiddleware, moviesController.discover)
+router.get('/search', authMiddleware, moviesController.search)
+router.post('/select', authMiddleware, moviesController.select)
+router.get('/posters', authMiddleware, moviesController.getPosters);
+router.post('/watched', authMiddleware, moviesController.watched);
 
 export default router;
 

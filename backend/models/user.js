@@ -76,3 +76,16 @@ export const findOrCreateOAuthUser =  async (provider, providerId, profile) => {
   const insertResult = await pool.query(insertQuery, values);
   return insertResult.rows[0];
 };
+
+export const addWatchedMovie = async (userId, movieId) => {
+  const query = 'INSERT INTO watched_movies (user_id, movie_id) VALUES ($1, $2) RETURNING *';
+  const values = [userId, movieId];
+  const result = await pool.query(query, values);
+  return result.rows[0];
+};
+
+export const getWatchedMovies = async (userId) => {
+  const query = 'SELECT * FROM watched_movies WHERE user_id = $1';
+  const result = await pool.query(query, [userId]);
+  return result.rows;
+};

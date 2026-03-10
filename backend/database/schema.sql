@@ -43,18 +43,10 @@ CREATE TABLE movies (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE user_movie_watched (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-    movie_id UUID REFERENCES movies(id) ON DELETE CASCADE,
-    watched_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(user_id, movie_id)
-);
-
 CREATE TABLE comments (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-    movie_id UUID REFERENCES movies(id) ON DELETE CASCADE,
+    movie_id VARCHAR(50) NOT NULL,
     content TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -62,10 +54,18 @@ CREATE TABLE comments (
 
 CREATE TABLE subtitles (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    movie_id UUID REFERENCES movies(id) ON DELETE CASCADE,
+    movie_id VARCHAR(50) NOT NULL,
     language VARCHAR(10) NOT NULL,
     file_path TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE watched_movies (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    movie_id VARCHAR(50) NOT NULL,
+    watched_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, movie_id)
 );
 
 CREATE INDEX idx_users_email ON users(email);
