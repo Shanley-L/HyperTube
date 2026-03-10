@@ -26,14 +26,13 @@ const moviesController = {
                 console.warn("getPosters: TMDB_API_KEY absente ou vide dans .env");
                 return res.json([]);
             }
-            const url = `https://api.themoviedb.org/3/movie/popular?api_key=${apiKey}&language=fr-FR&page=1`;
-            const response = await fetch(url);
-            const data = await response.json();
-            if (!response.ok) {
-                console.warn("getPosters: TMDb erreur", response.status, data.status_message || data);
-                return res.json([]);
-            }
-            const results = Array.isArray(data.results) ? data.results : [];
+            const pages = [1 ,2 ,3, 4, 5, 6, 7, 8, 9, 10];
+            const fetchPage = (page) =>
+                fetch(
+                    `https://api.themoviedb.org/3/movie/popular?api_key=${apiKey}&language=fr-FR&page=${page}`
+                ).then((r) => r.json());
+            const allData = await Promise.all(pages.map(fetchPage));
+            const results = allData.flatMap((data) => Array.isArray(data.results) ? data.results : []);
             const posters = results
                 .filter((movie) => movie && movie.poster_path)
                 .map((movie) => `https://image.tmdb.org/t/p/w300${movie.poster_path}`);
