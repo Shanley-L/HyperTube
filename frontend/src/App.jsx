@@ -15,6 +15,7 @@ function App() {
         <div className="app">
           <Header/>
           <main>
+            <div className="main-routes">
             <Routes>
               <Route path="/" element={<div>Home Page</div>} />
               <Route path="/login" element={<LoginPage />} />
@@ -27,6 +28,7 @@ function App() {
               {/* <Route path="/logout" element={<LogoutPage />} /> */}
               <Route path="/auth/callback" element={<AuthCallBackPage />} />
             </Routes>
+            </div>
           </main>
           <footer>
           </footer>
