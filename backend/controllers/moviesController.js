@@ -19,6 +19,32 @@ const moviesController = {
             res.status(500).json({ error: "Erreur de découverte" });
         }
     },
+    getPosters: async (req, res) => {
+        try {
+            const apiKey = process.env.TMDB_API_KEY;
+            if (!apiKey || apiKey.trim() === '') {
+                console.warn("getPosters: TMDB_API_KEY absente ou vide dans .env");
+                return res.json([]);
+            }
+            const pages = [1 ,2 ,3, 4, 5, 6, 7, 8, 9, 10];
+            const fetchPage = (page) =>
+                fetch(
+                    `https://api.themoviedb.org/3/movie/popular?api_key=${apiKey}&language=fr-FR&page=${page}`
+                ).then((r) => r.json());
+            const allData = await Promise.all(pages.map(fetchPage));
+            const results = allData.flatMap((data) => Array.isArray(data.results) ? data.results : []);
+            const posters = results
+                .filter((movie) => movie && movie.poster_path)
+                .map((movie) => `https://image.tmdb.org/t/p/w300${movie.poster_path}`);
+            if (posters.length === 0) {
+                console.warn("getPosters: aucun poster (results:", results.length, ", keys reçues:", data ? Object.keys(data) : "null", ")");
+            }
+            res.json(posters);
+        } catch (error) {
+            console.warn("getPosters:", error.message);
+            res.json([]);
+        }
+    },
     search: async (req, res) => {
         const { q } = req.query;
         if (!q) return res.status(400).json({ error: "Recherche vide" });

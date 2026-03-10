@@ -11,7 +11,7 @@ function AuthCallBackPage() {
     const token = searchParams.get('token');
     if (token) {
       login(token);
-      navigate('/', { replace: true });
+      navigate('/movies', { replace: true });
     } else {
       navigate('/login', { replace: true });
     }

@@ -23,6 +23,11 @@ export default function MovieTest() {
     }
   }
 
+  const onSearchSubmit = (e) => {
+    e.preventDefault(); // Empêche le rechargement de la page
+    handleSearch();
+  };
+
   const handleSearch = async () => {
     try {
       const res = await api.get(`movies/search?q=${query}`);
@@ -48,10 +53,15 @@ export default function MovieTest() {
 
   return (
     <div style={{ padding: '20px', textAlign: 'center' }}>
-      <div className="search-bar">
-        <input className="search-input" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Chercher un film..." />
-        <button className="search-btn" onClick={handleSearch}>Rechercher</button>
-      </div>
+      <form className="search-bar" onSubmit={onSearchSubmit}>
+        <input 
+          className="search-input" 
+          value={query} 
+          onChange={(e) => setQuery(e.target.value)} 
+          placeholder="Chercher un film..." 
+        />
+        <button type="submit" className="search-btn">Rechercher</button>
+      </form>
 
       <ul className="movie-grid" style={{ padding: 0, marginTop: '20px' }}>
         {movies.map((movie) => (
