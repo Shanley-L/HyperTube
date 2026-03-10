@@ -45,7 +45,7 @@ function Header() {
 
   return (
     <header>
-      <h1><button className="header-title-button" type="button" onClick={() => navigate('/movies')}>HyperTube</button></h1>
+      <h1><button className="header-title-button" type="button" onClick={() => navigate('/movies', { state: { resetFilters: true } })}>HyperTube</button></h1>
       <div className="header-right">
         {isAuthenticated || user ? (
           <div className="header-user-menu" ref={dropdownRef}>
