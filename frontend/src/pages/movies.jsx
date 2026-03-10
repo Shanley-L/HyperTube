@@ -19,6 +19,9 @@ export default function MovieTest() {
   const [filterGenre, setFilterGenre] = useState('');
   const [filterYear, setFilterYear] = useState('');
   const [minRating, setMinRating] = useState('');
+  const [page, setPage] = useState(1);
+  const [hasMorePages, setHasMorePages] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     discoverMovies();
@@ -81,12 +84,19 @@ export default function MovieTest() {
     });
   }, [movies, sortBy, filterGenre, filterYear, minRating]);
 
-  const discoverMovies = async () => {
+  const discoverMovies = async (pageParam = 1) => {
+    if (isLoading) return;
     try {
-      const res = await api.get(`movies/discover`);
-      setMovies(res.data);
+      setIsLoading(true);
+      const res = await api.get(`movies/discover`, { params: { page: pageParam } });
+      const { results, page: currentPage, total_pages } = res.data;
+      setMovies((prev) => pageParam === 1 ? (results || []) : [...prev, ...(results || [])]);
+      setPage(currentPage ?? pageParam);
+      setHasMorePages(typeof total_pages === "number" ? (currentPage ?? pageParam) < total_pages : true);
     } catch (err) {
       console.error("Erreur de découverte", err);
+    } finally {
+      setIsLoading(false);
     }
   };
 

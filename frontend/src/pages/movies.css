@@ -21,7 +21,9 @@ body {
 
 
 .movie-poster {
-  width: 100%;
+  width: 200px;
+  height: 270px;
+  object-fit: cover;
   border-radius: 10px;
   transition: transform 0.2s;
   cursor: pointer;

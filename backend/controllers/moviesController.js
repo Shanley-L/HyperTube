@@ -9,11 +9,12 @@ const GENRES_MAP = {
 
 const moviesController = {
     discover: async (req, res) => {
+        const page = Number(req.query.page) || 1;
         try {
-            const tmdbUrl = `https://api.themoviedb.org/3/discover/movie?api_key=${process.env.TMDB_API_KEY}&language=fr-FR&sort_by=popularity.desc&page=1`;
+            const tmdbUrl = `https://api.themoviedb.org/3/discover/movie?api_key=${process.env.TMDB_API_KEY}&language=fr-FR&sort_by=popularity.desc&page=${page}`;
             const tmdbRes = await fetch(tmdbUrl);
             const tmdbData = await tmdbRes.json();
-            return res.status(200).json(tmdbData.results);
+            return res.status(200).json({ page: tmdbData.page, total_pages: tmdbData.total_pages, results: tmdbData.results || [] });
         } catch (error) {
             console.error(error);
             res.status(500).json({ error: "Erreur de découverte" });
