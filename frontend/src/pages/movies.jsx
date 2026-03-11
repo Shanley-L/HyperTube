@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import '../pages/movies.css'
 import api from "../services/api";
@@ -22,6 +22,7 @@ export default function MovieTest() {
   const [page, setPage] = useState(1);
   const [hasMorePages, setHasMorePages] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
+  const loadMoreMovies = useRef(null);
 
   useEffect(() => {
     discoverMovies();
@@ -93,12 +94,32 @@ export default function MovieTest() {
       setMovies((prev) => pageParam === 1 ? (results || []) : [...prev, ...(results || [])]);
       setPage(currentPage ?? pageParam);
       setHasMorePages(typeof total_pages === "number" ? (currentPage ?? pageParam) < total_pages : true);
+      console.log(hasMorePages);
     } catch (err) {
       console.error("Erreur de découverte", err);
     } finally {
       setIsLoading(false);
     }
   };
+
+  
+  useEffect(() => {
+    const movieList = loadMoreMovies.current;
+    if (!movieList) return;
+
+    const observer = new IntersectionObserver((entries) => {
+      const [entry] = entries;
+      if (!entry?.isIntersecting) return;
+      if (query || !hasMorePages || isLoading) return;
+      discoverMovies(page + 1);
+    },
+    {root: null, rootMargin: '100px', threshold: 0});
+    observer.observe(movieList);
+    return () => {
+      observer.disconnect();
+      observer.observe = () => {};
+    };
+  }, [query, hasMorePages, isLoading, page]);
 
   const onSearchSubmit = (e) => {
     e.preventDefault(); // Empêche le rechargement de la page
@@ -219,6 +240,10 @@ export default function MovieTest() {
           </li>
         ))}
       </ul>
+      {!query && (
+        <div ref={loadMoreMovies} style={{ height: 20, width: '100%' }} aria-hidden="true" />
+      )}
+      {isLoading && <p style={{ color: '#aaa', marginTop: 8 }}>Chargement...</p>}
     </div>
   );
 }
