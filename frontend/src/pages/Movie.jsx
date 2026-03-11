@@ -2,6 +2,23 @@ import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import api from "../services/api";
 
+const getCleanQuality = (title) => {
+  if (!title) return "N/A";
+
+  // Look for 4K, 2160p, 1080p, or 720p in the string
+  const qualityMatch = title.match(/(4K|2160p|1080p|720p)/i);
+  const resolution = qualityMatch ? qualityMatch[0] : "SD";
+
+  // Check if it's the "Heavy" codec (x265/HEVC)
+  const isHeavy = /x265|hevc/i.test(title);
+
+  return {
+    resolution,
+    isHeavy,
+    fullTitle: title,
+  };
+};
+
 const MoviePage = () => {
   const { id } = useParams();
   const [movieData, setMovieData] = useState(null);
@@ -28,6 +45,7 @@ const MoviePage = () => {
     const fetchRealData = async () => {
       try {
         const res = await api.post("movies/select", { selectMovieid: id });
+        console.log("Torrent structure:", res.data.torrents[0]); // 🔍 Check the first torrent
         setMovieData(res.data);
 
         // Default to the first torrent in the list
@@ -129,23 +147,52 @@ const MoviePage = () => {
                 flexWrap: "wrap",
               }}
             >
-              {torrents.map((t, i) => (
-                <button
-                  key={i}
-                  onClick={() => setSelectedTorrent(t)}
-                  style={{
-                    padding: "8px 15px",
-                    backgroundColor:
-                      selectedTorrent?.magnet === t.magnet ? "#e50914" : "#333",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "4px",
-                    cursor: "pointer",
-                  }}
-                >
-                  {t.size} - {t.seeders} seeds
-                </button>
-              ))}
+              {torrents.map((t, i) => {
+                const quality = getCleanQuality(t.title);
+                const isSelected = selectedTorrent?.magnet === t.magnet;
+
+                return (
+                  <button
+                    key={i}
+                    onClick={() => setSelectedTorrent(t)}
+                    style={{
+                      padding: "10px 20px",
+                      backgroundColor: isSelected ? "#e50914" : "#222",
+                      border: isSelected ? "2px solid white" : "1px solid #444",
+                      borderRadius: "8px",
+                      color: "white",
+                      cursor: "pointer",
+                      textAlign: "left",
+                      minWidth: "160px",
+                      transition: "transform 0.2s",
+                    }}
+                  >
+                    <div style={{ fontWeight: "bold", fontSize: "1.1rem" }}>
+                      {quality.resolution}
+                      {quality.isHeavy && (
+                        <span
+                          style={{
+                            color: "#ffa000",
+                            fontSize: "0.7rem",
+                            marginLeft: "5px",
+                          }}
+                        >
+                          [x265]
+                        </span>
+                      )}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: "0.8rem",
+                        color: "#bbb",
+                        marginTop: "4px",
+                      }}
+                    >
+                      {t.size} • {t.seeders} seeds
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>

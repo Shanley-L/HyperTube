@@ -46,10 +46,9 @@ router.get(ApiRoutes.Stream, (req, res) => {
 
     file.select();
 
-    // 2. Wait for 5MB Buffer
     const checkBuffer = setInterval(() => {
       const downloadedBytes = engine.swarm.downloaded;
-      if (downloadedBytes > 5 * 1024 * 1024) {
+      if (downloadedBytes > 30 * 1024 * 1024) {
         clearInterval(checkBuffer);
 
         const isMp4 = file.name.endsWith(".mp4");
@@ -64,6 +63,7 @@ router.get(ApiRoutes.Stream, (req, res) => {
           });
 
           ffmpeg(file.createReadStream())
+            .inputOptions(["-re"])
             .videoCodec("libx264")
             .audioCodec("aac")
             .format("mp4")
@@ -78,6 +78,7 @@ router.get(ApiRoutes.Stream, (req, res) => {
               if (err.message !== "Output stream closed")
                 console.log("FFmpeg Error:", err.message);
             })
+            .on("stderr", (line) => console.log("FFmpeg:", line))
             .pipe(res, { end: true });
         }
       }
