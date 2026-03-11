@@ -45,7 +45,17 @@ function Header() {
 
   return (
     <header>
-      <h1><button className="header-title-button" type="button" onClick={() => navigate('/movies')}>HyperTube</button></h1>
+      <h1><button 
+        className="header-title-button" 
+        type="button" 
+        onClick={() => navigate('/movies')}
+        style={{ background: 'none', border: 'none', cursor: 'pointer', fontWeight: 'bold', fontSize: '2rem', color: 'white' }}
+      >
+        Hyper
+        <span style={{ backgroundColor: '#FF8C00', color: 'black', padding: '2px 8px', borderRadius: '6px', marginLeft: '2px' }}>
+          Tube
+        </span>
+      </button></h1>
       <div className="header-right">
         {isAuthenticated || user ? (
           <div className="header-user-menu" ref={dropdownRef}>
