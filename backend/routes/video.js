@@ -1,160 +1,147 @@
-import express from 'express';
-import torrentStream from 'torrent-stream';
-import ffmpeg from 'fluent-ffmpeg';
-import { ApiRoutes } from '../config/resourceNames.js';
-import authMiddleware from '../middlewares/auth.js'; 
+import express from "express";
+import torrentStream from "torrent-stream";
+import ffmpeg from "fluent-ffmpeg";
+import ffmpegInstaller from "@ffmpeg-installer/ffmpeg";
+import { ApiRoutes } from "../config/resourceNames.js";
+import authMiddleware from "../middlewares/auth.js";
 
 const router = express.Router();
 const activeEngines = {};
+ffmpeg.setFfmpegPath(ffmpegInstaller.path);
+
+console.log("✅ FFmpeg path automatically set to:", ffmpegInstaller.path);
 
 router.get(ApiRoutes.Stream, (req, res) => {
-    const magnetHash = req.params.id;
-    const magnetLink = `magnet:?xt=urn:btih:${magnetHash}`;
+  const magnetHash = req.params.id;
+  const magnetLink = `magnet:?xt=urn:btih:${magnetHash}`;
+  // const magnetLink =
+  // ("magnet:?xt=urn:btih:6983084B663C9996F1905001E8C1033D22744799");
 
-    if (!activeEngines[magnetHash])
-        activeEngines[magnetHash] = torrentStream(magnetLink, {
-		path: './downloads',
-		trackers: [
-			'udp://tracker.opentrackr.org:1337/announce',
-			'udp://9.rarbg.com:2810/announce',
-			'udp://tracker.openbittorrent.com:6969/announce'
-		]
-});
+  // 1. Set Headers for CORS/CORP immediately
+  res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+  res.setHeader("Access-Control-Allow-Origin", "http://localhost:5173");
 
-    const engine = activeEngines[magnetHash];
+  if (!activeEngines[magnetHash]) {
+    activeEngines[magnetHash] = torrentStream(magnetLink, {
+      path: "./downloads",
+      trackers: [
+        "udp://tracker.leechers-paradise.org:6969",
+        "udp://tracker.coppersurfer.tk:6969",
+        "udp://open.stealth.si:80/announce",
+        "http://tracker.opentrackr.org:1337/announce",
+        "udp://explodie.org:6969",
+        "udp://zer0day.ch:1337",
+      ],
+    });
+  }
 
-    const startStreaming = () => {
-        const file = engine.files.reduce((prev, curr) =>
-			prev.length > curr.length ? prev : curr);
+  const engine = activeEngines[magnetHash];
 
-		// This is the "Magic" part for streaming
-		// It tells the engine to focus all its power on the pieces 
-		// needed for the current read stream.
-		file.select(); 
-		
-		// Some versions of torrent-stream support this to force 
-		// the swarm to prioritize the file we are currently reading.
-		if (typeof engine.setPriority === 'function') {
-			console.log("It is a  function :D");
-			engine.setPriority(file.name, 1);
-    }
-		
-        const isMp4 = file.name.endsWith('.mp4');
+  const startStreaming = () => {
+    if (res.headersSent) return;
 
-        console.log(`🎬 Target file: ${file.name} | Transcoding: ${!isMp4}`);
+    const file = engine.files.reduce((prev, curr) =>
+      prev.length > curr.length ? prev : curr,
+    );
 
-        if (isMp4)
-            handleMp4Streaming(file, req, res);
-		else {
-			console.log("⏳ Waiting for initial buffer...");
-			
-			// We wait until we have at least 1MB or some pieces before starting FFmpeg
-			const stream = file.createReadStream();
+    file.select();
 
-			res.writeHead(200, {
-				'Content-Type': 'video/mp4',
-				'Connection': 'keep-alive',
-				'Transfer-Encoding': 'chunked'
-			});
+    // 2. Wait for 5MB Buffer
+    const checkBuffer = setInterval(() => {
+      const downloadedBytes = engine.swarm.downloaded;
+      if (downloadedBytes > 5 * 1024 * 1024) {
+        clearInterval(checkBuffer);
 
-			ffmpeg(stream)
-				.videoCodec('libx264')
-				.audioCodec('aac')
-				.format('mp4')
-				.outputOptions([
-					'-movflags frag_keyframe+empty_moov+default_base_moof+faststart', 
-					'-pix_fmt yuv420p',
-					'-preset ultrafast',
-					'-tune zerolatency',
-					'-probesize 32',
-					'-analyzeduration 0',
-					'-threads 0'
+        const isMp4 = file.name.endsWith(".mp4");
+        if (isMp4) {
+          handleMp4Streaming(file, req, res);
+        } else {
+          console.log("🚀 Starting FFmpeg Transcode...");
 
-				])
-				.on('start', (cmd) => console.log("🚀 FFmpeg started"))
-				.on('error', (err) => {
-					if (err.message !== 'Output stream closed') {
-						console.log('FFmpeg Error:', err.message);
-					}
-				})
-				.pipe(res, { end: true });
-		}
-    };
+          res.writeHead(200, {
+            "Content-Type": "video/mp4",
+            "Cross-Origin-Resource-Policy": "cross-origin",
+          });
 
-    setupEngineListeners(engine, startStreaming);
+          ffmpeg(file.createReadStream())
+            .videoCodec("libx264")
+            .audioCodec("aac")
+            .format("mp4")
+            .outputOptions([
+              "-movflags frag_keyframe+empty_moov+default_base_moof+faststart",
+              "-pix_fmt yuv420p", // 👈 Crucial for HDR/10-bit compatibility
+              "-preset ultrafast",
+              "-tune zerolatency",
+              "-vf scale=1280:-1", // 👈 Downscale 4K to 720p to save your CPU
+            ])
+            .on("error", (err) => {
+              if (err.message !== "Output stream closed")
+                console.log("FFmpeg Error:", err.message);
+            })
+            .pipe(res, { end: true });
+        }
+      }
+    }, 2000);
 
-    if (engine.files && engine.files.length > 0)
-        startStreaming();
-	else
-        engine.once('ready', startStreaming);
+    // 3. Simple Progress Log
+    const progressLog = setInterval(() => {
+      if (engine.swarm) {
+        const percent = ((engine.swarm.downloaded / file.length) * 100).toFixed(
+          2,
+        );
+        console.log(`📊 [${file.name}] Progress: ${percent}%`);
+        console.log(
+          `📊 Progress: ${percent}% | Peers: ${engine.swarm.wires.length}`,
+        );
+      }
+    }, 5000);
 
-	res.on('close', () => {
-		console.log("Client disconnected.");
-		// engine.destroy(); // kills the engine immediately ()
-	});
+    res.on("close", () => {
+      clearInterval(checkBuffer);
+      clearInterval(progressLog);
+    });
+  };
+
+  if (engine.files && engine.files.length > 0) startStreaming();
+  else engine.once("ready", startStreaming);
 });
 
 // Test only, remove in production
-router.get('/status/:id', (req, res) => {
-    const engine = activeEngines[req.params.id];
-    if (!engine)
-		return res.status(404).json({ message: "No active stream" });
+router.get("/status/:id", (req, res) => {
+  const engine = activeEngines[req.params.id];
+  if (!engine) return res.status(404).json({ message: "No active stream" });
 
-    res.json({
-        peers: engine.swarm.wires.length,
-        downloaded: engine.swarm.downloaded,
-        speed: engine.swarm.downloadSpeed(),
-    });
+  res.json({
+    peers: engine.swarm.wires.length,
+    downloaded: engine.swarm.downloaded,
+    speed: engine.swarm.downloadSpeed(),
+  });
 });
 
 function handleMp4Streaming(file, req, res) {
-	const fileSize = file.length;
-	const range = req.headers.range;
+  const fileSize = file.length;
+  const range = req.headers.range;
 
-	if (range) {
-		const parts = range.replace(/bytes=/, "").split("-");
-		const start = parseInt(parts[0], 10);
-		const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
-		const chunksize = (end - start) + 1;
+  if (range) {
+    const parts = range.replace(/bytes=/, "").split("-");
+    const start = parseInt(parts[0], 10);
+    const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+    const chunksize = end - start + 1;
 
-		res.writeHead(206, {
-			'Content-Range': `bytes ${start}-${end}/${fileSize}`,
-			'Accept-Ranges': 'bytes',
-			'Content-Length': chunksize,
-			'Content-Type': 'video/mp4',
-		});
-		file.createReadStream({ start, end }).pipe(res);
-	}
-	else {
-		res.writeHead(200, {
-			'Content-Length': fileSize,
-			'Content-Type': 'video/mp4',
-		});
-		file.createReadStream().pipe(res);
-	}
-}
-
-// Listeners to log metadata and peer connections
-// TEST ONLY
-function setupEngineListeners(engine, callback) {
-    if (engine.hasCustomListeners)
-		return;
-    engine.hasCustomListeners = true;
-
-    engine.on('torrent', () => {
-        console.log("✅ Metadata received! Found files:", engine.files.map(f => f.name));
+    res.writeHead(206, {
+      "Content-Range": `bytes ${start}-${end}/${fileSize}`,
+      "Accept-Ranges": "bytes",
+      "Content-Length": chunksize,
+      "Content-Type": "video/mp4",
     });
-
-    const interval = setInterval(() => {
-        if (engine.swarm) {
-            const connected = engine.swarm.wires.length;
-			const progress = (engine.swarm.downloaded / file.length * 100).toFixed(2);
-       		console.log(`📊 Total Download Progress: ${progress}% | Speed: ${engine.swarm.downloadSpeed()} bps`);
-            console.log(`📡 Connected peers: ${connected}`);
-            if (connected > 0)
-				clearInterval(interval); 
-        }
-    }, 3000);
+    file.createReadStream({ start, end }).pipe(res);
+  } else {
+    res.writeHead(200, {
+      "Content-Length": fileSize,
+      "Content-Type": "video/mp4",
+    });
+    file.createReadStream().pipe(res);
+  }
 }
 
 export default router;
