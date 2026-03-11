@@ -2,6 +2,9 @@ import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import api from "../services/api";
 
+/**
+ * Utility to extract resolution labels from torrent titles.
+ */
 const getCleanQuality = (title) => {
   if (!title) return { resolution: "SD", isHeavy: false };
   const qualityMatch = title.match(/(4K|2160p|1080p|720p)/i);
@@ -16,39 +19,29 @@ const MoviePage = () => {
   const [movieData, setMovieData] = useState(null);
   const [selectedTorrent, setSelectedTorrent] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [status, setStatus] = useState({ peers: 0, speed: 0, downloaded: 0 });
 
+  /**
+   * Extracts the InfoHash from a magnet link.
+   * Needed to build the streaming URL for the backend.
+   */
   const getHash = (magnet) => {
     if (!magnet) return null;
     const match = magnet.match(/btih:([a-zA-Z0-9]+)/);
-    // If it's a Jackett URL, we'll use the URL itself as the key later
+    // If it's a Jackett URL, we send "loading" and let the backend resolve it
     return match ? match[1].toLowerCase() : "loading";
   };
-
-  useEffect(() => {
-    const interval = setInterval(async () => {
-      if (selectedTorrent) {
-        const hash = getHash(selectedTorrent.magnet);
-        if (hash === "loading") return;
-        try {
-          // Use your 'api' instance instead of raw axios
-          const res = await api.get(`video/status/${hash}`);
-          setStatus(res.data);
-        } catch (e) {}
-      }
-    }, 2000);
-    return () => clearInterval(interval);
-  }, [selectedTorrent]);
 
   useEffect(() => {
     const fetchRealData = async () => {
       try {
         const res = await api.post("movies/select", { selectMovieid: id });
         setMovieData(res.data);
+        // Default to the first torrent in the list
         if (res.data.torrents?.length > 0)
           setSelectedTorrent(res.data.torrents[0]);
         setLoading(false);
       } catch (err) {
+        console.error("Error fetching movie details:", err);
         setLoading(false);
       }
     };
@@ -60,13 +53,12 @@ const MoviePage = () => {
   const { info, torrents } = movieData;
   const currentHash = selectedTorrent ? getHash(selectedTorrent.magnet) : null;
 
-  // Construct URL with the full magnet/Jackett link encoded
+  // This is the direct link to your Node.js streaming endpoint
   const videoUrl = selectedTorrent
     ? `http://localhost:3000/api/video/stream/${currentHash}?url=${encodeURIComponent(selectedTorrent.magnet)}`
     : null;
 
-  const isBuffering = status.downloaded < 25 * 1024 * 1024; // Matches backend 25MB
-
+  // Groups torrents by their source (YTS, EZTV, etc.) for a better UI
   const groupedTorrents = torrents.reduce((groups, torrent) => {
     const source = torrent.source || "Unknown Indexer";
     if (!groups[source]) groups[source] = [];
@@ -93,6 +85,7 @@ const MoviePage = () => {
           margin: "0 auto",
         }}
       >
+        {/* Poster Section */}
         <div style={{ flex: "1" }}>
           <img
             src={info.poster}
@@ -101,6 +94,7 @@ const MoviePage = () => {
           />
         </div>
 
+        {/* Details & Torrent Selection Section */}
         <div style={{ flex: "2" }}>
           <h1>
             {info.title} ({info.year})
@@ -142,14 +136,10 @@ const MoviePage = () => {
                   {items.map((t, i) => {
                     const q = getCleanQuality(t.title);
                     const isSel = selectedTorrent?.magnet === t.magnet;
-
                     return (
                       <button
                         key={i}
-                        onClick={() => {
-                          setSelectedTorrent(t);
-                          setStatus({ peers: 0, speed: 0, downloaded: 0 });
-                        }}
+                        onClick={() => setSelectedTorrent(t)}
                         style={{
                           padding: "10px 15px",
                           backgroundColor: isSel ? "#e50914" : "#333",
@@ -160,7 +150,6 @@ const MoviePage = () => {
                           textAlign: "left",
                         }}
                       >
-                        {/* This restores the quality label you lost */}
                         <div style={{ fontWeight: "bold" }}>
                           {q.resolution}{" "}
                           {q.isHeavy && (
@@ -184,41 +173,14 @@ const MoviePage = () => {
         </div>
       </div>
 
-      <div
-        className="player-section"
-        style={{ marginTop: "40px", position: "relative" }}
-      >
+      {/* Video Player Section */}
+      <div className="player-section" style={{ marginTop: "40px" }}>
         {videoUrl ? (
           <div style={{ maxWidth: "1000px", margin: "0 auto" }}>
-            {isBuffering && (
-              <div
-                style={{
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  backgroundColor: "rgba(0,0,0,0.8)",
-                  zIndex: 10,
-                  display: "flex",
-                  flexDirection: "column",
-                  justifyContent: "center",
-                  alignItems: "center",
-                }}
-              >
-                <div className="spinner"></div>
-                <p>
-                  Mise en mémoire tampon...{" "}
-                  {((status.downloaded / (25 * 1024 * 1024)) * 100).toFixed(0)}%
-                </p>
-                <p style={{ fontSize: "0.8rem" }}>
-                  Pairs: {status.peers} | {(status.speed / 1024).toFixed(2)}{" "}
-                  KB/s
-                </p>
-              </div>
-            )}
-            <video key={videoUrl} controls width="100%" preload="metadata">
+            {/* The 'key' attribute ensures the player reloads completely if you change torrents */}
+            <video key={videoUrl} controls width="100%" preload="auto">
               <source src={videoUrl} type="video/mp4" />
+              Votre navigateur ne supporte pas la lecture vidéo.
             </video>
           </div>
         ) : (

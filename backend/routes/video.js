@@ -2,25 +2,25 @@ import express from "express";
 import torrentStream from "torrent-stream";
 import ffmpeg from "fluent-ffmpeg";
 import ffmpegInstaller from "@ffmpeg-installer/ffmpeg";
-import axios from "axios";
+import axios from "axios"; // 👈 New dependency
 import { ApiRoutes } from "../config/resourceNames.js";
 
 const router = express.Router();
 const activeEngines = {};
 ffmpeg.setFfmpegPath(ffmpegInstaller.path);
 
-console.log("✅ FFmpeg path automatically set to:", ffmpegInstaller.path);
-
 async function resolveMagnet(input) {
   if (input.startsWith("magnet:?")) return input;
 
   try {
+    // We follow the Jackett link to get the actual magnet redirect
     const response = await axios.get(input, {
       maxRedirects: 0,
       validateStatus: (status) => status >= 200 && status < 400,
     });
     return response.headers.location || response.data;
   } catch (error) {
+    // If Jackett returns the magnet in the body instead of a redirect
     if (error.response?.data && error.response.data.startsWith("magnet:?")) {
       return error.response.data;
     }
@@ -30,6 +30,7 @@ async function resolveMagnet(input) {
 }
 
 router.get(ApiRoutes.Stream, async (req, res) => {
+  // We check if it's a hash (ID) or a full URL via query param
   const magnetId = req.params.id;
   const jackettUrl = req.query.url;
 
@@ -40,6 +41,7 @@ router.get(ApiRoutes.Stream, async (req, res) => {
   if (!magnetLink)
     return res.status(400).send("Could not resolve torrent source");
 
+  // Extract hash for tracking
   const magnetHash = magnetLink.match(/btih:([a-zA-Z0-9]+)/)[1].toLowerCase();
 
   res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
@@ -68,6 +70,7 @@ router.get(ApiRoutes.Stream, async (req, res) => {
 
     file.select();
 
+    // ⏳ WAIT for a healthy buffer before starting FFmpeg
     const checkBuffer = setInterval(() => {
       if (engine.swarm.downloaded > 25 * 1024 * 1024) {
         // 25MB Buffer
@@ -83,7 +86,7 @@ router.get(ApiRoutes.Stream, async (req, res) => {
           });
 
           ffmpeg(file.createReadStream())
-            .inputOptions(["-re"])
+            .inputOptions(["-re"]) // Read at native speed to prevent eating buffer
             .videoCodec("libx264")
             .audioCodec("aac")
             .format("mp4")
@@ -92,7 +95,7 @@ router.get(ApiRoutes.Stream, async (req, res) => {
               "-pix_fmt yuv420p",
               "-preset ultrafast",
               "-tune zerolatency",
-              "-vf scale=1280:-1",
+              "-vf scale=1280:-1", // Downscale for stability
             ])
             .on("error", (err) => console.log("FFmpeg:", err.message))
             .pipe(res, { end: true });
