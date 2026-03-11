@@ -9,6 +9,7 @@ router.get('/search', authMiddleware, moviesController.search)
 router.post('/select', authMiddleware, moviesController.select)
 router.get('/posters', authMiddleware, moviesController.getPosters);
 router.post('/watched', authMiddleware, moviesController.watched);
+router.get('/getwatchedmovies', authMiddleware, moviesController.getWatchedMovies)
 
 export default router;
 

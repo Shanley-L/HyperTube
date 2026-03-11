@@ -85,7 +85,14 @@ export const addWatchedMovie = async (userId, movieId) => {
 };
 
 export const getWatchedMovies = async (userId) => {
-  const query = 'SELECT * FROM watched_movies WHERE user_id = $1';
+  console.log(userId);
+  const query = 'SELECT movie_id FROM watched_movies WHERE user_id = $1';
   const result = await pool.query(query, [userId]);
-  return result.rows;
+  return result.rows.map(row => row.movie_id) ;
+};
+
+export const checkIfMovieIsWatched = async (userId, movieId) => {
+  const query = 'SELECT * FROM watched_movies WHERE user_id = $1 AND movie_id = $2';
+  const result = await pool.query(query, [userId, movieId]);
+  return result.rows.length > 0;
 };

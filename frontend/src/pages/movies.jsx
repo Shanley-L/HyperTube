@@ -5,6 +5,7 @@ import api from "../services/api";
 export default function MovieTest() {
   const [query, setQuery] = useState('');
   const [movies, setMovies] = useState([]);
+  const [watchedMovies, setWatchedMovies] = useState([]);
 
   useEffect(() => {
     discoverMovies();
@@ -14,6 +15,9 @@ export default function MovieTest() {
     try {
       const res = await api.get(`movies/discover`);
       setMovies(res.data);
+      const watchedRes = await api.get(`movies/getwatchedmovies`);
+      setWatchedMovies(watchedRes.data);
+      console.log(watchedMovies);
     } catch (err) {
       console.error("Erreur de découverte", err);
     }
@@ -42,6 +46,9 @@ export default function MovieTest() {
       const addWatched = await api.post('movies/watched', {
             selectMovieid: movieId // L'ID passe dans le body
         });
+
+      setWatchedMovies((prev) => [...prev, movieId.toString()]);
+      
       console.log(response.data);
       console.log(addWatched.data);
       
@@ -63,10 +70,14 @@ export default function MovieTest() {
       </form>
 
       <ul className="movie-grid" style={{ padding: 0, marginTop: '20px' }}>
-        {movies.map((movie) => (
-          <li 
+        {movies.map((movie) => {
+          // Déclaration de la constante pour chaque film
+          const isWatched = watchedMovies.includes(movie.id.toString());
+
+          return (
+            <li 
               key={movie.id} 
-              className={`movie-card ${movie.isWatched ? 'watched' : ''}`}
+              className={`movie-card ${isWatched ? 'watched' : ''}`}
             >
               <div className="poster-container">
                 <img 
@@ -74,17 +85,21 @@ export default function MovieTest() {
                   className="movie-poster" 
                   onClick={() => handleMovieClick(movie.id)} 
                 />
-                {movie.isWatched && <span className="watched-badge">✔ Vu</span>}
+                {isWatched && <span className="watched-badge">✔ Vu</span>}
               </div>
-            <div className="movie-info">
-              <h3 className="movie-title">{movie.title}</h3>
-              <div className="movie-meta">
-                <span>{movie.release_date?.split('-')[0]}</span>
-                <span className="movie-rating">⭐ {Math.round(movie.vote_average * 10) / 10}</span>
+              
+              <div className="movie-info">
+                <h3 className="movie-title">{movie.title}</h3>
+                <div className="movie-meta">
+                  <span>{movie.release_date?.split('-')[0]}</span>
+                  <span className="movie-rating">
+                    ⭐ {Math.round(movie.vote_average * 10) / 10}
+                  </span>
+                </div>
               </div>
-            </div>
-          </li>
-        ))}
+            </li>
+          );
+        })}
       </ul>
     </div>
   );

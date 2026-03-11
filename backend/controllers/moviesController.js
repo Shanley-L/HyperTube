@@ -1,5 +1,5 @@
 import { response } from "express";
-import { addWatchedMovie, getWatchedMovies } from "../models/user.js";
+import { addWatchedMovie, getWatchedMovies, checkIfMovieIsWatched } from "../models/user.js";
 
 const GENRES_MAP = {
     28: "Action", 12: "Aventure", 16: "Animation", 35: "Comédie", 80: "Crime",
@@ -124,6 +124,8 @@ const moviesController = {
         const { selectMovieid } = req.body;
         console.log("ID reçu :", selectMovieid);
         if (!selectMovieid) return res.status(400).json({ error: "ID manquant" });
+        const isWatched = await checkIfMovieIsWatched(userId, selectMovieid);
+        if (isWatched) return res.status(400).json({ error: "Film déjà ajouter" });
         try {
             const watchedMovie = await addWatchedMovie(userId, selectMovieid);
             return res.json(watchedMovie);
@@ -134,7 +136,7 @@ const moviesController = {
     },
     getWatchedMovies: async (req, res) => {
         try {
-            const userId = req.user.id;
+            const userId = req.user.userId;
             const watchedMovies = await getWatchedMovies(userId);
             return res.json(watchedMovies);
         } catch (error) {
