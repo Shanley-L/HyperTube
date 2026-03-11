@@ -4,6 +4,11 @@
   box-sizing: border-box;
 }
 
+html,
+body {
+  height: 100%;
+}
+
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
@@ -13,7 +18,9 @@ body {
 }
 
 .app {
-  min-height: 100vh;
+  height: 100vh;
+  width: 100%;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
 }
@@ -38,6 +45,7 @@ main {
   display: flex;
   flex-direction: column;
   min-height: 0;
+  overflow: auto;
 }
 
 .main-routes {
@@ -48,10 +56,24 @@ main {
 }
 
 footer {
+  flex-shrink: 0;
   background-color: #1a1a1a;
-  color: white;
-  padding: 1rem 2rem;
-  text-align: center;
+  color: #b0b0b0;
+  padding: 0.5rem 2rem;
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.footer-brand {
+  color: rgb(245, 131, 0);
+  font-weight: 600;
+}
+
+.footer-copy {
+  color: inherit;
 }
 
 .header-user-menu {
@@ -315,7 +337,7 @@ footer {
 .auth-background {
   position: relative;
   flex: 1;
-  min-height: calc(100vh - 60px);
+  min-height: 0;
   overflow: hidden;
   display: flex;
   align-items: center;
@@ -330,17 +352,29 @@ footer {
   bottom: 0;
   width: 100%;
   height: 100%;
+  overflow: hidden;
+  z-index: 0;
+  pointer-events: none;
+  display: flex;
+  justify-content: center;
+}
+
+.poster-scroll-track {
   display: grid;
   grid-template-columns: repeat(auto-fill, 180px);
   grid-auto-rows: 270px;
   gap: 0;
-  animation: scrollPosters 90s linear infinite;
-  z-index: 0;
-  pointer-events: none;
   align-content: start;
+  justify-content: center;
+  width: 100%;
+  min-width: max(100%, 1260px);
 }
 
-.poster-scroll img {
+.poster-scroll-track--ready {
+  animation: scrollPosters 50s linear infinite;
+}
+
+.poster-scroll-track img {
   width: 180px;
   height: 270px;
   object-fit: cover;
@@ -366,5 +400,5 @@ footer {
 
 @keyframes scrollPosters {
   from { transform: translateY(0); }
-  to { transform: translateY(-50%); }
+  to { transform: translateY(calc(-1 * var(--scroll-height, 50%))); }
 }
