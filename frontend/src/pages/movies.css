@@ -88,7 +88,7 @@ body {
   top: 10px;
   right: 10px;
   background: rgba(245, 131, 0, 0.863);
-  color: white;
+  color: rgb(0, 0, 0);
   padding: 2px 8px;
   border-radius: 4px;
   font-size: 0.7rem;
