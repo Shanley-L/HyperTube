@@ -68,7 +68,7 @@ body {
   border-radius: 25px;
   border: none;
   background: rgb(245, 131, 0);
-  color: white;
+  color: rgb(0, 0, 0);
   cursor: pointer;
   font-weight: bold;
   transition: 0.2s;
