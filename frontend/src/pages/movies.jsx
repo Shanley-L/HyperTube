@@ -1,15 +1,14 @@
-import { useState, useEffect } from 'react';
-import '../pages/movies.css'
+import { useState, useEffect } from "react";
+import "../pages/movies.css";
 import api from "../services/api";
-import { useNavigate } from 'react-router-dom';
-
+import { useNavigate } from "react-router-dom";
 
 export default function MovieTest() {
-	const [query, setQuery] = useState('');
-	const [movies, setMovies] = useState([]);
-	
-	const navigate = useNavigate();
-	
+  const [query, setQuery] = useState("");
+  const [movies, setMovies] = useState([]);
+
+  const navigate = useNavigate();
+
   useEffect(() => {
     discoverMovies();
   }, []);
@@ -21,7 +20,7 @@ export default function MovieTest() {
     } catch (err) {
       console.error("Erreur de découverte", err);
     }
-  }
+  };
 
   const onSearchSubmit = (e) => {
     e.preventDefault(); // Empêche le rechargement de la page
@@ -31,7 +30,7 @@ export default function MovieTest() {
   const handleSearch = async () => {
     try {
       const res = await api.get(`movies/search?q=${query}`);
-      console.log(movies)
+      console.log(movies);
       setMovies(res.data);
     } catch (err) {
       console.error("Erreur de recherche", err);
@@ -40,42 +39,45 @@ export default function MovieTest() {
 
   const handleMovieClick = async (movieId) => {
     try {
-      const response = await api.post('movies/select', {
-            selectMovieid: movieId // L'ID passe dans le body
-        });
-      console.log(response.data);
-	  	navigate(`/movie/${movieId}`);
-      
+      const response = await api.post("movies/select", {
+        selectMovieid: movieId, // L'ID passe dans le body
+      });
+      console.log("Response : ", response.data);
+      navigate(`/movie/${movieId}`);
     } catch (error) {
-      console.error("Error while fetching movie")
+      console.error("Error while fetching movie");
     }
-  }
+  };
 
   return (
-    <div style={{ padding: '20px', textAlign: 'center' }}>
+    <div style={{ padding: "20px", textAlign: "center" }}>
       <form className="search-bar" onSubmit={onSearchSubmit}>
-        <input 
-          className="search-input" 
-          value={query} 
-          onChange={(e) => setQuery(e.target.value)} 
-          placeholder="Chercher un film..." 
+        <input
+          className="search-input"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Chercher un film..."
         />
-        <button type="submit" className="search-btn">Rechercher</button>
+        <button type="submit" className="search-btn">
+          Rechercher
+        </button>
       </form>
 
-      <ul className="movie-grid" style={{ padding: 0, marginTop: '20px' }}>
+      <ul className="movie-grid" style={{ padding: 0, marginTop: "20px" }}>
         {movies.map((movie) => (
           <li className="movie-card" key={movie.id}>
-            <img 
-              src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`} 
-              onClick={() => handleMovieClick(movie.id)} 
-              className="movie-poster" 
+            <img
+              src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`}
+              onClick={() => handleMovieClick(movie.id)}
+              className="movie-poster"
             />
             <div className="movie-info">
               <h3 className="movie-title">{movie.title}</h3>
               <div className="movie-meta">
-                <span>{movie.release_date?.split('-')[0]}</span>
-                <span className="movie-rating">⭐ {Math.round(movie.vote_average * 10) / 10}</span>
+                <span>{movie.release_date?.split("-")[0]}</span>
+                <span className="movie-rating">
+                  ⭐ {Math.round(movie.vote_average * 10) / 10}
+                </span>
               </div>
             </div>
           </li>

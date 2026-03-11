@@ -3,19 +3,11 @@ import { useParams } from "react-router-dom";
 import api from "../services/api";
 
 const getCleanQuality = (title) => {
-  if (!title) return "N/A";
-
-  // Look for 4K, 2160p, 1080p, or 720p in the string
+  if (!title) return { resolution: "SD", isHeavy: false };
   const qualityMatch = title.match(/(4K|2160p|1080p|720p)/i);
-  const resolution = qualityMatch ? qualityMatch[0] : "SD";
-
-  // Check if it's the "Heavy" codec (x265/HEVC)
-  const isHeavy = /x265|hevc/i.test(title);
-
   return {
-    resolution,
-    isHeavy,
-    fullTitle: title,
+    resolution: qualityMatch ? qualityMatch[0] : "SD",
+    isHeavy: /x265|hevc/i.test(title),
   };
 };
 
@@ -24,16 +16,23 @@ const MoviePage = () => {
   const [movieData, setMovieData] = useState(null);
   const [selectedTorrent, setSelectedTorrent] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [status, setStatus] = useState({ peers: 0, speed: 0 });
+  const [status, setStatus] = useState({ peers: 0, speed: 0, downloaded: 0 });
+
+  const getHash = (magnet) => {
+    if (!magnet) return null;
+    const match = magnet.match(/btih:([a-zA-Z0-9]+)/);
+    // If it's a Jackett URL, we'll use the URL itself as the key later
+    return match ? match[1].toLowerCase() : "loading";
+  };
 
   useEffect(() => {
     const interval = setInterval(async () => {
       if (selectedTorrent) {
         const hash = getHash(selectedTorrent.magnet);
+        if (hash === "loading") return;
         try {
-          const res = await axios.get(
-            `http://localhost:3000/api/video/status/${hash}`,
-          );
+          // Use your 'api' instance instead of raw axios
+          const res = await api.get(`video/status/${hash}`);
           setStatus(res.data);
         } catch (e) {}
       }
@@ -45,16 +44,11 @@ const MoviePage = () => {
     const fetchRealData = async () => {
       try {
         const res = await api.post("movies/select", { selectMovieid: id });
-        console.log("Torrent structure:", res.data.torrents[0]); // 🔍 Check the first torrent
         setMovieData(res.data);
-
-        // Default to the first torrent in the list
-        if (res.data.torrents && res.data.torrents.length > 0) {
+        if (res.data.torrents?.length > 0)
           setSelectedTorrent(res.data.torrents[0]);
-        }
         setLoading(false);
       } catch (err) {
-        console.error("Erreur chargement film:", err);
         setLoading(false);
       }
     };
@@ -64,18 +58,21 @@ const MoviePage = () => {
   if (loading || !movieData) return <div className="loader">Chargement...</div>;
 
   const { info, torrents } = movieData;
+  const currentHash = selectedTorrent ? getHash(selectedTorrent.magnet) : null;
 
-  // Function to extract the hash from the magnet link
-  const getHash = (magnet) => {
-    const match = magnet.match(/btih:([a-zA-Z0-9]+)/);
-    return match ? match[1].toLowerCase() : null;
-  };
-
-  const hash = selectedTorrent ? getHash(selectedTorrent.magnet) : null;
-
-  const videoUrl = hash
-    ? `http://localhost:3000/api/video/stream/${hash}`
+  // Construct URL with the full magnet/Jackett link encoded
+  const videoUrl = selectedTorrent
+    ? `http://localhost:3000/api/video/stream/${currentHash}?url=${encodeURIComponent(selectedTorrent.magnet)}`
     : null;
+
+  const isBuffering = status.downloaded < 25 * 1024 * 1024; // Matches backend 25MB
+
+  const groupedTorrents = torrents.reduce((groups, torrent) => {
+    const source = torrent.source || "Unknown Indexer";
+    if (!groups[source]) groups[source] = [];
+    groups[source].push(torrent);
+    return groups;
+  }, {});
 
   return (
     <div
@@ -89,7 +86,6 @@ const MoviePage = () => {
       }}
     >
       <div
-        className="content-container"
         style={{
           display: "flex",
           gap: "40px",
@@ -97,168 +93,140 @@ const MoviePage = () => {
           margin: "0 auto",
         }}
       >
-        {/* Left: Poster */}
         <div style={{ flex: "1" }}>
           <img
             src={info.poster}
             alt={info.title}
-            style={{
-              width: "100%",
-              borderRadius: "8px",
-              boxShadow: "0 10px 30px black",
-            }}
+            style={{ width: "100%", borderRadius: "8px" }}
           />
         </div>
 
-        {/* Right: Info */}
         <div style={{ flex: "2" }}>
-          <h1 style={{ fontSize: "3.5rem", margin: 0 }}>
+          <h1>
             {info.title} ({info.year})
           </h1>
           <p style={{ color: "#f5c518", fontSize: "1.5rem" }}>
             ★ {info.rating}
           </p>
-          <div style={{ margin: "20px 0", display: "flex", gap: "10px" }}>
-            {info.genres.map((g) => (
-              <span
-                key={g}
+
+          <div style={{ marginTop: "30px" }}>
+            <h3>Résultats par Indexer :</h3>
+            {Object.entries(groupedTorrents).map(([source, items]) => (
+              <details
+                key={source}
+                open
                 style={{
-                  border: "1px solid #555",
-                  padding: "2px 10px",
-                  borderRadius: "15px",
+                  marginBottom: "15px",
+                  border: "1px solid #333",
+                  borderRadius: "8px",
                 }}
               >
-                {g}
-              </span>
+                <summary
+                  style={{
+                    padding: "10px",
+                    cursor: "pointer",
+                    backgroundColor: "#222",
+                    borderRadius: "8px",
+                  }}
+                >
+                  {source} ({items.length} torrents)
+                </summary>
+                <div
+                  style={{
+                    display: "flex",
+                    gap: "10px",
+                    padding: "10px",
+                    flexWrap: "wrap",
+                  }}
+                >
+                  {items.map((t, i) => {
+                    const q = getCleanQuality(t.title);
+                    const isSel = selectedTorrent?.magnet === t.magnet;
+
+                    return (
+                      <button
+                        key={i}
+                        onClick={() => {
+                          setSelectedTorrent(t);
+                          setStatus({ peers: 0, speed: 0, downloaded: 0 });
+                        }}
+                        style={{
+                          padding: "10px 15px",
+                          backgroundColor: isSel ? "#e50914" : "#333",
+                          border: isSel ? "2px solid white" : "1px solid #555",
+                          color: "white",
+                          borderRadius: "6px",
+                          cursor: "pointer",
+                          textAlign: "left",
+                        }}
+                      >
+                        {/* This restores the quality label you lost */}
+                        <div style={{ fontWeight: "bold" }}>
+                          {q.resolution}{" "}
+                          {q.isHeavy && (
+                            <span
+                              style={{ color: "#ffa000", fontSize: "0.7rem" }}
+                            >
+                              [HEVC]
+                            </span>
+                          )}
+                        </div>
+                        <div style={{ fontSize: "0.75rem", opacity: 0.8 }}>
+                          {t.size} • {t.seeders} seeds
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </details>
             ))}
-          </div>
-          <p style={{ fontSize: "1.1rem", lineHeight: "1.6" }}>
-            {info.overview}
-          </p>
-
-          {/* TORRENT SELECTOR */}
-          <div style={{ marginTop: "30px" }}>
-            <h3>Qualité disponible :</h3>
-            <div
-              style={{
-                display: "flex",
-                gap: "10px",
-                marginTop: "10px",
-                flexWrap: "wrap",
-              }}
-            >
-              {torrents.map((t, i) => {
-                const quality = getCleanQuality(t.title);
-                const isSelected = selectedTorrent?.magnet === t.magnet;
-
-                return (
-                  <button
-                    key={i}
-                    onClick={() => setSelectedTorrent(t)}
-                    style={{
-                      padding: "10px 20px",
-                      backgroundColor: isSelected ? "#e50914" : "#222",
-                      border: isSelected ? "2px solid white" : "1px solid #444",
-                      borderRadius: "8px",
-                      color: "white",
-                      cursor: "pointer",
-                      textAlign: "left",
-                      minWidth: "160px",
-                      transition: "transform 0.2s",
-                    }}
-                  >
-                    <div style={{ fontWeight: "bold", fontSize: "1.1rem" }}>
-                      {quality.resolution}
-                      {quality.isHeavy && (
-                        <span
-                          style={{
-                            color: "#ffa000",
-                            fontSize: "0.7rem",
-                            marginLeft: "5px",
-                          }}
-                        >
-                          [x265]
-                        </span>
-                      )}
-                    </div>
-                    <div
-                      style={{
-                        fontSize: "0.8rem",
-                        color: "#bbb",
-                        marginTop: "4px",
-                      }}
-                    >
-                      {t.size} • {t.seeders} seeds
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
           </div>
         </div>
       </div>
 
-      <div className="player-section">
+      <div
+        className="player-section"
+        style={{ marginTop: "40px", position: "relative" }}
+      >
         {videoUrl ? (
-          <div className="video-wrapper">
-            <video
-              key={hash} // Using the hash as a key is perfect for reloads
-              controls
-              width="100%"
-              preload="metadata"
-            >
+          <div style={{ maxWidth: "1000px", margin: "0 auto" }}>
+            {isBuffering && (
+              <div
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  backgroundColor: "rgba(0,0,0,0.8)",
+                  zIndex: 10,
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}
+              >
+                <div className="spinner"></div>
+                <p>
+                  Mise en mémoire tampon...{" "}
+                  {((status.downloaded / (25 * 1024 * 1024)) * 100).toFixed(0)}%
+                </p>
+                <p style={{ fontSize: "0.8rem" }}>
+                  Pairs: {status.peers} | {(status.speed / 1024).toFixed(2)}{" "}
+                  KB/s
+                </p>
+              </div>
+            )}
+            <video key={videoUrl} controls width="100%" preload="metadata">
               <source src={videoUrl} type="video/mp4" />
-              Your browser does not support the video tag.
             </video>
           </div>
         ) : (
-          <div className="placeholder">
-            <p>Please select a quality to start streaming...</p>
-          </div>
+          <p style={{ textAlign: "center" }}>
+            Sélectionnez un torrent pour commencer...
+          </p>
         )}
       </div>
-
-      {/* <div
-        className="player-section"
-        style={{ marginTop: "50px", textAlign: "center" }}
-      >
-        {selectedTorrent ? (
-          <div style={{ maxWidth: "900px", margin: "0 auto" }}>
-            {selectedTorrent && (
-              <div className="video-wrapper">
-                <div
-                  style={{
-                    padding: "10px",
-                    color: "#f5c518",
-                    textAlign: "center",
-                  }}
-                >
-                  Initialisation du flux... (Connexion aux pairs en cours)
-                </div>
-
-                <video
-                  key={selectedTorrent.magnet}
-                  controls
-                  width="100%"
-                  preload="metadata" // Change from 'auto' to 'metadata' to be less aggressive
-                  crossOrigin="anonymous"
-                >
-                  <source src={videoUrl} type="video/mp4" />
-                </video>
-              </div>
-            )}
-            <p style={{ marginTop: "10px", color: "#888" }}>
-              Lecture en cours : {selectedTorrent.title}
-            </p>
-            <p>
-              Peers: {status.peers} | Speed: {(status.speed / 1024).toFixed(2)}{" "}
-              KB/s
-            </p>
-          </div>
-        ) : (
-          <p>Aucun torrent sélectionné</p>
-        )}
-      </div> */}
     </div>
   );
 };

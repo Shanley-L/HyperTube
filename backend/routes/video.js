@@ -2,8 +2,8 @@ import express from "express";
 import torrentStream from "torrent-stream";
 import ffmpeg from "fluent-ffmpeg";
 import ffmpegInstaller from "@ffmpeg-installer/ffmpeg";
+import axios from "axios";
 import { ApiRoutes } from "../config/resourceNames.js";
-import authMiddleware from "../middlewares/auth.js";
 
 const router = express.Router();
 const activeEngines = {};
@@ -11,13 +11,37 @@ ffmpeg.setFfmpegPath(ffmpegInstaller.path);
 
 console.log("✅ FFmpeg path automatically set to:", ffmpegInstaller.path);
 
-router.get(ApiRoutes.Stream, (req, res) => {
-  const magnetHash = req.params.id;
-  const magnetLink = `magnet:?xt=urn:btih:${magnetHash}`;
-  // const magnetLink =
-  // ("magnet:?xt=urn:btih:6983084B663C9996F1905001E8C1033D22744799");
+async function resolveMagnet(input) {
+  if (input.startsWith("magnet:?")) return input;
 
-  // 1. Set Headers for CORS/CORP immediately
+  try {
+    const response = await axios.get(input, {
+      maxRedirects: 0,
+      validateStatus: (status) => status >= 200 && status < 400,
+    });
+    return response.headers.location || response.data;
+  } catch (error) {
+    if (error.response?.data && error.response.data.startsWith("magnet:?")) {
+      return error.response.data;
+    }
+    console.error("❌ Magnet Resolution Error:", error.message);
+    return null;
+  }
+}
+
+router.get(ApiRoutes.Stream, async (req, res) => {
+  const magnetId = req.params.id;
+  const jackettUrl = req.query.url;
+
+  let magnetLink = jackettUrl
+    ? await resolveMagnet(jackettUrl)
+    : `magnet:?xt=urn:btih:${magnetId}`;
+
+  if (!magnetLink)
+    return res.status(400).send("Could not resolve torrent source");
+
+  const magnetHash = magnetLink.match(/btih:([a-zA-Z0-9]+)/)[1].toLowerCase();
+
   res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
   res.setHeader("Access-Control-Allow-Origin", "http://localhost:5173");
 
@@ -27,10 +51,8 @@ router.get(ApiRoutes.Stream, (req, res) => {
       trackers: [
         "udp://tracker.leechers-paradise.org:6969",
         "udp://tracker.coppersurfer.tk:6969",
-        "udp://open.stealth.si:80/announce",
         "http://tracker.opentrackr.org:1337/announce",
-        "udp://explodie.org:6969",
-        "udp://zer0day.ch:1337",
+        "udp://open.stealth.si:80/announce",
       ],
     });
   }
@@ -47,16 +69,14 @@ router.get(ApiRoutes.Stream, (req, res) => {
     file.select();
 
     const checkBuffer = setInterval(() => {
-      const downloadedBytes = engine.swarm.downloaded;
-      if (downloadedBytes > 30 * 1024 * 1024) {
+      if (engine.swarm.downloaded > 25 * 1024 * 1024) {
+        // 25MB Buffer
         clearInterval(checkBuffer);
 
-        const isMp4 = file.name.endsWith(".mp4");
-        if (isMp4) {
+        if (file.name.endsWith(".mp4")) {
           handleMp4Streaming(file, req, res);
         } else {
-          console.log("🚀 Starting FFmpeg Transcode...");
-
+          console.log(`🚀 Transcoding: ${file.name}`);
           res.writeHead(200, {
             "Content-Type": "video/mp4",
             "Cross-Origin-Resource-Policy": "cross-origin",
@@ -69,32 +89,24 @@ router.get(ApiRoutes.Stream, (req, res) => {
             .format("mp4")
             .outputOptions([
               "-movflags frag_keyframe+empty_moov+default_base_moof+faststart",
-              "-pix_fmt yuv420p", // 👈 Crucial for HDR/10-bit compatibility
+              "-pix_fmt yuv420p",
               "-preset ultrafast",
               "-tune zerolatency",
-              "-vf scale=1280:-1", // 👈 Downscale 4K to 720p to save your CPU
+              "-vf scale=1280:-1",
             ])
-            .on("error", (err) => {
-              if (err.message !== "Output stream closed")
-                console.log("FFmpeg Error:", err.message);
-            })
-            .on("stderr", (line) => console.log("FFmpeg:", line))
+            .on("error", (err) => console.log("FFmpeg:", err.message))
             .pipe(res, { end: true });
         }
       }
     }, 2000);
 
-    // 3. Simple Progress Log
     const progressLog = setInterval(() => {
-      if (engine.swarm) {
-        const percent = ((engine.swarm.downloaded / file.length) * 100).toFixed(
-          2,
-        );
-        console.log(`📊 [${file.name}] Progress: ${percent}%`);
-        console.log(
-          `📊 Progress: ${percent}% | Peers: ${engine.swarm.wires.length}`,
-        );
-      }
+      const percent = ((engine.swarm.downloaded / file.length) * 100).toFixed(
+        2,
+      );
+      console.log(
+        `📊 [${magnetHash.substring(0, 6)}] ${percent}% | Peers: ${engine.swarm.wires.length}`,
+      );
     }, 5000);
 
     res.on("close", () => {
@@ -103,15 +115,13 @@ router.get(ApiRoutes.Stream, (req, res) => {
     });
   };
 
-  if (engine.files && engine.files.length > 0) startStreaming();
+  if (engine.files?.length > 0) startStreaming();
   else engine.once("ready", startStreaming);
 });
 
-// Test only, remove in production
 router.get("/status/:id", (req, res) => {
-  const engine = activeEngines[req.params.id];
-  if (!engine) return res.status(404).json({ message: "No active stream" });
-
+  const engine = activeEngines[req.params.id.toLowerCase()];
+  if (!engine) return res.status(404).json({ message: "Not active" });
   res.json({
     peers: engine.swarm.wires.length,
     downloaded: engine.swarm.downloaded,
@@ -120,25 +130,21 @@ router.get("/status/:id", (req, res) => {
 });
 
 function handleMp4Streaming(file, req, res) {
-  const fileSize = file.length;
   const range = req.headers.range;
-
   if (range) {
     const parts = range.replace(/bytes=/, "").split("-");
     const start = parseInt(parts[0], 10);
-    const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
-    const chunksize = end - start + 1;
-
+    const end = parts[1] ? parseInt(parts[1], 10) : file.length - 1;
     res.writeHead(206, {
-      "Content-Range": `bytes ${start}-${end}/${fileSize}`,
+      "Content-Range": `bytes ${start}-${end}/${file.length}`,
       "Accept-Ranges": "bytes",
-      "Content-Length": chunksize,
+      "Content-Length": end - start + 1,
       "Content-Type": "video/mp4",
     });
     file.createReadStream({ start, end }).pipe(res);
   } else {
     res.writeHead(200, {
-      "Content-Length": fileSize,
+      "Content-Length": file.length,
       "Content-Type": "video/mp4",
     });
     file.createReadStream().pipe(res);
