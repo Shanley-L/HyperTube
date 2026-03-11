@@ -1,5 +1,5 @@
 import { response } from "express";
-import { addWatchedMovie, getWatchedMovies, checkIfMovieIsWatched } from "../models/user.js";
+import { findById, addWatchedMovie, getWatchedMovies, checkIfMovieIsWatched } from "../models/user.js";
 
 const GENRES_MAP = {
     28: "Action", 12: "Aventure", 16: "Animation", 35: "Comédie", 80: "Crime",
@@ -10,11 +10,12 @@ const GENRES_MAP = {
 
 const moviesController = {
     discover: async (req, res) => {
+        const page = Number(req.query.page) || 1;
         try {
-            const tmdbUrl = `https://api.themoviedb.org/3/discover/movie?api_key=${process.env.TMDB_API_KEY}&language=fr-FR&sort_by=popularity.desc&page=1`;
+            const tmdbUrl = `https://api.themoviedb.org/3/discover/movie?api_key=${process.env.TMDB_API_KEY}&language=fr-FR&sort_by=popularity.desc&page=${page}`;
             const tmdbRes = await fetch(tmdbUrl);
             const tmdbData = await tmdbRes.json();
-            return res.status(200).json(tmdbData.results);
+            return res.status(200).json({ page: tmdbData.page, total_pages: tmdbData.total_pages, results: tmdbData.results || [] });
         } catch (error) {
             console.error(error);
             res.status(500).json({ error: "Erreur de découverte" });
@@ -119,10 +120,10 @@ const moviesController = {
     },
     watched: async (req, res) => {
         const userId = req.user.userId;
-        console.log("User ID :", userId);
         const { selectMovieid } = req.body;
-        console.log("ID reçu :", selectMovieid);
         if (!selectMovieid) return res.status(400).json({ error: "ID manquant" });
+        const user = await findById(userId);
+        if (!user) return res.status(401).json({ error: "Utilisateur introuvable", code: "USER_NOT_FOUND" });
         const isWatched = await checkIfMovieIsWatched(userId, selectMovieid);
         if (isWatched) return res.status(400).json({ error: "Film déjà ajouter" });
         try {
@@ -136,6 +137,8 @@ const moviesController = {
     getWatchedMovies: async (req, res) => {
         try {
             const userId = req.user.userId;
+            const user = await findById(userId);
+            if (!user) return res.status(401).json({ error: "Utilisateur introuvable", code: "USER_NOT_FOUND" });
             const watchedMovies = await getWatchedMovies(userId);
             return res.json(watchedMovies);
         } catch (error) {
