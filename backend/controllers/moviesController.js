@@ -1,4 +1,5 @@
 import { response } from "express";
+import { addWatchedMovie, getWatchedMovies, checkIfMovieIsWatched } from "../models/user.js";
 
 const GENRES_MAP = {
     28: "Action", 12: "Aventure", 16: "Animation", 35: "Comédie", 80: "Crime",
@@ -114,6 +115,32 @@ const moviesController = {
         } catch (error) {
             console.error(error);
             res.status(500).json({ error: "Erreur lors de la sélection" });
+        }
+    },
+    watched: async (req, res) => {
+        const userId = req.user.userId;
+        console.log("User ID :", userId);
+        const { selectMovieid } = req.body;
+        console.log("ID reçu :", selectMovieid);
+        if (!selectMovieid) return res.status(400).json({ error: "ID manquant" });
+        const isWatched = await checkIfMovieIsWatched(userId, selectMovieid);
+        if (isWatched) return res.status(400).json({ error: "Film déjà ajouter" });
+        try {
+            const watchedMovie = await addWatchedMovie(userId, selectMovieid);
+            return res.json(watchedMovie);
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({ error: "Erreur lors de l'ajout du film" });
+        }
+    },
+    getWatchedMovies: async (req, res) => {
+        try {
+            const userId = req.user.userId;
+            const watchedMovies = await getWatchedMovies(userId);
+            return res.json(watchedMovies);
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({ error: "Erreur lors de la récupération des films" });
         }
     }
 }
