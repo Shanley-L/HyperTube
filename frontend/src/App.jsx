@@ -7,6 +7,7 @@ import ForgotPasswordPage from './pages/ForgotPassword.jsx';
 import ResetPasswordPage from './pages/ResetPassword.jsx';
 import MoviesPages from './pages/movies.jsx';
 import Header from './components/Header.jsx';
+import Footer from './components/Footer.jsx';
 import AuthCallBackPage from './pages/AuthCallBack.jsx';
 
 function App() {
@@ -28,13 +29,11 @@ function App() {
               <Route path="/reset-password" element={<ResetPasswordPage />} />
               <Route path="/movies" element={<MoviesPages />} />
               {/* <Route path="/profile" element={<ProfilePage />} /> */}
-              {/* <Route path="/logout" element={<LogoutPage />} /> */}
               <Route path="/auth/callback" element={<AuthCallBackPage />} />
             </Routes>
             </div>
           </main>
-          <footer>
-          </footer>
+          <Footer/>
         </div>
       </Router>
     </AuthProvider>
