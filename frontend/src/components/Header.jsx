@@ -66,7 +66,7 @@ function Header() {
               aria-expanded={dropdownOpen}
               aria-haspopup="true"
             >
-              Hello, {user?.username}
+              Hello {user?.username}
             </button>
             {dropdownOpen && (
               <div className="header-user-menu-dropdown">
