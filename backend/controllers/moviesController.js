@@ -106,7 +106,6 @@ const moviesController = {
   select: async (req, res) => {
     // 1. Correction du nom (doit matcher ton Axios : selectMovieid)
     const { selectMovieid } = req.body;
-    console.log("ID reçu :", selectMovieid);
 
     if (!selectMovieid) return res.status(400).json({ error: "ID manquant" });
 
