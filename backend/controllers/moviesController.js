@@ -125,7 +125,7 @@ const moviesController = {
         const user = await findById(userId);
         if (!user) return res.status(401).json({ error: "Utilisateur introuvable", code: "USER_NOT_FOUND" });
         const isWatched = await checkIfMovieIsWatched(userId, selectMovieid);
-        if (isWatched) return res.status(400).json({ error: "Film déjà ajouter" });
+        if (isWatched) return res.status(200).json({ message: "Film déjà ajouter" });
         try {
             const watchedMovie = await addWatchedMovie(userId, selectMovieid);
             return res.json(watchedMovie);

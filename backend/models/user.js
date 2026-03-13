@@ -96,3 +96,30 @@ export const checkIfMovieIsWatched = async (userId, movieId) => {
   const result = await pool.query(query, [userId, movieId]);
   return result.rows.length > 0;
 };
+
+export const addComment = async (userId, userName, movieId, comment) => {
+  const query = 'INSERT INTO comments (user_id, user_name, movie_id, content) VALUES ($1, $2, $3, $4) RETURNING *';
+  const values = [userId, userName, movieId, comment];
+  const result = await pool.query(query, values);
+  return result.rows[0];
+};
+
+export const getComments = async (movieId) => {
+  const query = 'SELECT * FROM comments WHERE movie_id = $1';
+  const result = await pool.query(query, [movieId]);
+  return result.rows;
+};
+
+export const updateComment = async (id, userId, comment) => {
+  const query = 'UPDATE comments SET content = $1 WHERE id = $2 AND user_id = $3 RETURNING *';
+  const values = [comment, id, userId];
+  const result = await pool.query(query, values);
+  return result.rows[0];
+};
+
+export const deleteComment = async (id, userId) => {
+    const query = 'DELETE FROM comments WHERE id = $1 AND user_id = $2 RETURNING *';
+    const values = [id, userId];
+    const result = await pool.query(query, values);
+    return result.rows[0];
+};
