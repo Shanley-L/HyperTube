@@ -120,7 +120,6 @@ export default function MovieTest() {
           ? (currentPage ?? pageParam) < total_pages
           : true,
       );
-      console.log(hasMorePages);
     } catch (err) {
       console.error("Erreur de découverte", err);
     } finally {
@@ -156,7 +155,6 @@ export default function MovieTest() {
   const handleSearch = async () => {
     try {
       const res = await api.get(`movies/search?q=${query}`);
-      console.log(movies);
       setMovies(res.data);
     } catch (err) {
       console.error("Erreur de recherche", err);
@@ -173,8 +171,6 @@ export default function MovieTest() {
       });
 
       setWatchedMovies((prev) => [...prev, movieId.toString()]);
-      console.log(response.data);
-      console.log(addWatched.data);
       navigate(`/movie/${movieId}`);
     } catch (error) {
       console.error("Error while fetching movie");

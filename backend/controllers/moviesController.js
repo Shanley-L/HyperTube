@@ -21,7 +21,7 @@ const calculateScore = (t) => {
   if (title.includes("X265") || title.includes("HEVC")) score += 150;
 
   // Health Score (Seeders) - Capped to avoid skewing too much from fake seeder counts
-  score += Math.min(t.Seeders * 2, 300);
+  score += Math.min(t.Seeders * 2, 100);
 
   return score;
 };
@@ -115,7 +115,7 @@ const moviesController = {
         return res.status(404).json({ error: "Aucun film trouvé sur TMDB" });
       }
 
-      console.log(tmdbData.results);
+      // console.log(tmdbData.results);
 
       return res.status(200).json(tmdbData.results);
     } catch (error) {
@@ -178,6 +178,7 @@ const moviesController = {
           rating: Math.round(movieData.vote_average * 10) / 10,
           genres: movieData.genres.map((g) => g.name),
           overview: movieData.overview,
+          runtime: movieData.runtime,
         },
         torrents: finalTorrents,
       });
@@ -187,8 +188,6 @@ const moviesController = {
     }
   },
   watched: async (req, res) => {
-    console.log("request.body : ", req.body);
-    console.error("request.body : ", req.body);
     const userId = req.user.userId;
     const { selectMovieid } = req.body;
     if (!selectMovieid) return res.status(400).json({ error: "ID manquant" });

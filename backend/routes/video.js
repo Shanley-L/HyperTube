@@ -3,11 +3,17 @@ import torrentStream from "torrent-stream";
 import ffmpeg from "fluent-ffmpeg";
 import ffmpegInstaller from "@ffmpeg-installer/ffmpeg";
 import axios from "axios";
+import path from "path";
+import fs from "fs";
 import { ApiRoutes } from "../config/resourceNames.js";
 
 const router = express.Router();
 const activeEngines = {};
 ffmpeg.setFfmpegPath(ffmpegInstaller.path);
+
+// Setup HLS storage directory
+const hlsBaseDir = path.resolve("./hls_segments");
+if (!fs.existsSync(hlsBaseDir)) fs.mkdirSync(hlsBaseDir);
 
 async function resolveMagnet(input) {
   if (input.startsWith("magnet:?")) return input;
@@ -31,160 +37,101 @@ router.get("/status/:id", (req, res) => {
   const magnetHash = req.params.id.toLowerCase();
   const engine = activeEngines[magnetHash];
 
-  if (!engine || !engine.files || engine.files.length === 0) {
-    return res.json({
-      status: "searching",
-      health: "loading",
-      peers: 0,
-      progress: 0,
-    });
-  }
+  if (!engine) return res.json({ health: "loading", peers: 0 });
 
   const activePeers = engine.swarm.wires.length;
-  const downloadedMB = (engine.swarm.downloaded / (1024 * 1024)).toFixed(2);
-
-  let health = "dead";
-  if (activePeers > 8) health = "excellent";
-  else if (activePeers > 0) health = "okay";
+  const health =
+    activePeers > 5 ? "excellent" : activePeers > 0 ? "okay" : "dead";
 
   res.json({
-    status: "streaming",
+    health,
     peers: activePeers,
-    health: health,
-    progress: downloadedMB + " MB",
+    status: "active",
   });
 });
 
-function handleMp4Streaming(file, req, res) {
-  if (res.headersSent) return;
-
-  const range = req.headers.range;
-  res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
-  res.setHeader("Access-Control-Allow-Origin", "http://localhost:5173");
-  res.setHeader("Accept-Ranges", "bytes");
-
-  if (range) {
-    const parts = range.replace(/bytes=/, "").split("-");
-    const start = parseInt(parts[0], 10);
-    const end = parts[1] ? parseInt(parts[1], 10) : file.length - 1;
-    const chunksize = end - start + 1;
-
-    res.writeHead(206, {
-      "Content-Range": `bytes ${start}-${end}/${file.length}`,
-      "Content-Length": chunksize,
-      "Content-Type": "video/mp4",
-    });
-
-    const stream = file.createReadStream({ start, end });
-    stream.pipe(res);
-    res.on("close", () => stream.destroy());
-  } else {
-    res.writeHead(200, {
-      "Content-Length": file.length,
-      "Content-Type": "video/mp4",
-    });
-    const stream = file.createReadStream();
-    stream.pipe(res);
-    res.on("close", () => stream.destroy());
-  }
-}
-
-router.get(ApiRoutes.Stream, async (req, res) => {
+router.get("/hls/:id/index.m3u8", async (req, res) => {
   const magnetId = req.params.id;
   const jackettUrl = req.query.url;
+  const movieDuration = req.query.duration;
+  const magnetHash = magnetId.toLowerCase();
+  const movieFolder = path.join(hlsBaseDir, magnetHash);
 
   res.setHeader("Access-Control-Allow-Origin", "http://localhost:5173");
   res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
 
-  if (req.method === "OPTIONS") return res.sendStatus(200);
-
-  let magnetLink = jackettUrl
-    ? await resolveMagnet(jackettUrl)
-    : `magnet:?xt=urn:btih:${magnetId}`;
-
-  if (!magnetLink) return res.status(400).send("Source introuvable");
-
-  const magnetHash = magnetLink.match(/btih:([a-zA-Z0-9]+)/)[1].toLowerCase();
+  if (!fs.existsSync(movieFolder))
+    fs.mkdirSync(movieFolder, { recursive: true });
 
   if (!activeEngines[magnetHash]) {
+    let magnetLink = jackettUrl
+      ? await resolveMagnet(jackettUrl)
+      : `magnet:?xt=urn:btih:${magnetId}`;
     activeEngines[magnetHash] = torrentStream(magnetLink, {
       path: "./downloads",
-      trackers: [
-        "udp://tracker.leechers-paradise.org:6969",
-        "udp://tracker.opentrackr.org:1337/announce",
-        "udp://9.rarbg.com:2810/announce",
-        "udp://exodus.desync.com:6969",
-      ],
     });
   }
 
   const engine = activeEngines[magnetHash];
+  const playlistPath = path.join(movieFolder, "index.m3u8");
 
-  const startStreaming = () => {
-    if (res.headersSent) return;
-
-    if (!engine.files || engine.files.length === 0) {
-      console.error("No files found in torrent engine.");
-      return res.status(404).send("Aucun fichier trouvé dans ce torrent.");
-    }
+  const startHlsTranscoding = async () => {
+    if (fs.existsSync(playlistPath)) return res.sendFile(playlistPath);
 
     const file = engine.files.reduce((prev, curr) =>
       prev.length > curr.length ? prev : curr,
     );
-
     file.select();
 
-    if (file.name.endsWith(".mp4")) {
-      return handleMp4Streaming(file, req, res);
+    // 🚀 THE FIX: Get duration before starting transcode
+
+    let command = ffmpeg(file.createReadStream())
+      .videoCodec("libx264")
+      .audioCodec("aac")
+      .addOptions([
+        "-profile:v baseline",
+        "-level 3.0",
+        "-start_number 0",
+        "-hls_time 10",
+        "-hls_list_size 0",
+        "-f hls",
+        "-preset ultrafast",
+        "-hls_playlist_type vod",
+      ]);
+
+    if (movieDuration && !isNaN(movieDuration)) {
+      command.outputOptions([`-t ${movieDuration}`]);
     }
 
-    const checkBuffer = setInterval(() => {
-      if (res.writableEnded || res.finished) {
-        clearInterval(checkBuffer);
-        return;
+    command
+      .output(playlistPath)
+      .on("error", (err) => console.log("HLS Error:", err.message))
+      .run();
+
+    const interval = setInterval(() => {
+      if (fs.existsSync(playlistPath)) {
+        clearInterval(interval);
+        res.sendFile(playlistPath);
       }
-
-      if (engine.swarm.downloaded > 5 * 1024 * 1024) {
-        clearInterval(checkBuffer);
-
-        res.writeHead(200, {
-          "Content-Type": "video/mp4",
-          Connection: "keep-alive",
-          "Cross-Origin-Resource-Policy": "cross-origin",
-        });
-
-        ffmpeg(file.createReadStream())
-          .videoCodec("libx264")
-          .audioCodec("aac")
-          .format("mp4")
-          .outputOptions([
-            "-movflags frag_keyframe+empty_moov+default_base_moof+faststart",
-            "-preset ultrafast",
-            "-tune zerolatency",
-          ])
-          .on("error", (err) => {
-            console.log("FFmpeg Error:", err.message);
-            if (!res.headersSent) res.end();
-          })
-          .pipe(res);
-      }
-    }, 2000);
-
-    res.on("close", () => clearInterval(checkBuffer));
+    }, 1000);
   };
 
-  // If already ready, start. Otherwise wait for the event.
-  if (engine.files && engine.files.length > 0) {
-    startStreaming();
+  if (engine.files && engine.files.length > 0) startHlsTranscoding();
+  else engine.once("ready", startHlsTranscoding);
+});
+
+// 📁 Route to serve the actual .ts segments
+router.get("/hls/:id/:segment", (req, res) => {
+  const { id, segment } = req.params;
+  const segmentPath = path.join(hlsBaseDir, id.toLowerCase(), segment);
+
+  res.setHeader("Access-Control-Allow-Origin", "http://localhost:5173");
+  res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+
+  if (fs.existsSync(segmentPath)) {
+    res.sendFile(segmentPath);
   } else {
-    engine.once("ready", () => {
-      // Double check after the event
-      if (engine.files && engine.files.length > 0) {
-        startStreaming();
-      } else {
-        res.status(404).send("Metadata introuvable ou torrent vide.");
-      }
-    });
+    res.status(404).send("Segment not ready");
   }
 });
 

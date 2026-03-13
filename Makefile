@@ -1,7 +1,7 @@
 DOCKER_COMPOSE = docker compose
 NPM = npm
 
-.PHONY: dev up stop dev-front dev-back clean fclean help install re
+.PHONY: dev up stop dev-front dev-back clean fclean help install re clean-downloads dev-clean
 
 help:
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-15s\033[0m %s\n", $$1, $$2}'
@@ -16,8 +16,11 @@ dev: up
 	@echo "🚀 Starting development environment..."
 	make -j 2 dev-front dev-back
 
+dev-clean: up clean-downloads
+	@echo "🚀 Starting development environment..."
+	make -j 2 dev-front dev-back
+
 up:
-	rm -rf ./backend/downloads/*
 	@echo "🐳 Ensuring lockfiles exist for Docker build..."
 	@if [ ! -f backend/package-lock.json ]; then cd backend && $(NPM) install; fi
 	@if [ ! -f frontend/package-lock.json ]; then cd frontend && $(NPM) install; fi
@@ -32,8 +35,14 @@ dev-back:
 stop:
 	$(DOCKER_COMPOSE) stop
 
+clean-downloads:
+	rm -rf ./backend/downloads/*
+	rm -rf ./backend/hls_segments/*
+	@echo "🧹 Downloaded files and HLS segments have been cleaned."
+	
 clean: stop
 	rm -rf ./backend/downloads/*
+	rm -rf ./backend/hls_segments/*
 	$(DOCKER_COMPOSE) down
 	@echo "🧹 Containers stopped and removed."
 
