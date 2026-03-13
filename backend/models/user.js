@@ -57,24 +57,52 @@ export const updatePassword = async (userId, newHash) => {
 export const findOrCreateOAuthUser =  async (provider, providerId, profile) => {
   const query = 'SELECT * FROM users WHERE oauth_provider = $1 AND oauth_id = $2'
   const result = await pool.query(query, [provider, providerId]);
-  if (result.rows.length > 0) return result.rows[0];
+  if (result.rows.length > 0) {
+    const row = result.rows[0];
+    if (profile.picture_url && !row.profile_picture_url) {
+      await pool.query(
+        'UPDATE users SET profile_picture_url = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+        [profile.picture_url, row.id]
+      );
+      row.profile_picture_url = profile.picture_url;
+    }
+    return row;
+  }
 
   let username = profile.username || profile.email.split('@')[0];
   while (await findByUsername(username)) {
     username = username + '_' + Math.floor(Math.random() * 1000);
   }
-  const insertQuery = `INSERT INTO users (email, username, first_name, last_name, oauth_provider, oauth_id, email_verified) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING ${SAFE_USER_COLUMNS}`
+  const insertQuery = `INSERT INTO users (email, username, first_name, last_name, profile_picture_url, oauth_provider, oauth_id, email_verified) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING ${SAFE_USER_COLUMNS}`
   const values = [
     profile.email,
     username,
     profile.first_name,
     profile.last_name,
+    profile.picture_url || null,
     provider,
     providerId,
     true,
   ];
   const insertResult = await pool.query(insertQuery, values);
   return insertResult.rows[0];
+};
+
+export const updateUserProfile = async (userId, { username, first_name, last_name, email, profile_picture_url }) => {
+  const updates = [];
+  const values = [];
+  let n = 1;
+  if (username !== undefined) { updates.push(`username = $${n++}`); values.push(username); }
+  if (first_name !== undefined) { updates.push(`first_name = $${n++}`); values.push(first_name); }
+  if (last_name !== undefined) { updates.push(`last_name = $${n++}`); values.push(last_name); }
+  if (email !== undefined) { updates.push(`email = $${n++}`); values.push(email); }
+  if (profile_picture_url !== undefined) { updates.push(`profile_picture_url = $${n++}`); values.push(profile_picture_url); }
+  if (updates.length === 0) return findById(userId);
+  updates.push('updated_at = CURRENT_TIMESTAMP');
+  values.push(userId);
+  const q = `UPDATE users SET ${updates.join(', ')} WHERE id = $${n} RETURNING *`;
+  const result = await pool.query(q, values);
+  return result.rows[0];
 };
 
 export const addWatchedMovie = async (userId, movieId) => {

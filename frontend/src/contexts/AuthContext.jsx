@@ -1,19 +1,18 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import api from '../services/api';
 
-const AuthContext = createContext()
+const AuthContext = createContext();
 
-export const AuthProvider = ({children}) => {
-  const [token, setToken] = useState(() => {
-    return localStorage.getItem('token') || null;
-  });
-
+export const AuthProvider = ({ children }) => {
+  const [token, setToken] = useState(() => localStorage.getItem('token') || null);
   const [user, setUser] = useState(null);
 
   const login = (newToken) => {
     setToken(newToken);
     localStorage.setItem('token', newToken);
+    setUser(null);
   };
-  
+
   const logout = () => {
     setToken(null);
     setUser(null);
@@ -22,20 +21,43 @@ export const AuthProvider = ({children}) => {
 
   const isAuthenticated = !!token;
 
-  useEffect(() => {
-    if (token && !user) {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      setUser({ userId: payload.userId, username: payload.username });
+  const refreshProfile = useCallback(async (opts = {}) => {
+    if (!token) return;
+    try {
+      const { data } = await api.get('/users/me');
+      setUser((prev) => ({
+        userId: data.id,
+        username: data.username,
+        profile_picture_url: data.profile_picture_url || null,
+        avatarBust: opts.avatarBust ? Date.now() : prev?.avatarBust,
+      }));
+    } catch {
+      setUser((prev) => {
+        if (prev?.username) return prev;
+        try {
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          return { userId: payload.userId, username: payload.username, profile_picture_url: null };
+        } catch {
+          return null;
+        }
+      });
     }
-  }, [token, user]);
+  }, [token]);
+
+  useEffect(() => {
+    if (!token) {
+      setUser(null);
+      return;
+    }
+    refreshProfile();
+  }, [token, refreshProfile]);
 
   return (
-    <AuthContext.Provider value={{ token, user, login, logout, isAuthenticated }}>
+    <AuthContext.Provider value={{ token, user, login, logout, isAuthenticated, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );
-
-}
+};
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -43,4 +65,4 @@ export const useAuth = () => {
     throw new Error('useAuth must be used within AuthProvider');
   }
   return context;
-}
+};

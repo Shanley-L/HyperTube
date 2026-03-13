@@ -3,7 +3,6 @@ import { Strategy as JwtStrategy, ExtractJwt } from 'passport-jwt';
 import dotenv from 'dotenv';
 import { Strategy as FortyTwoStrategy } from 'passport-42';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
-import { Strategy as GithubStrategy } from 'passport-github2';
 import { findOrCreateOAuthUser } from '../models/user.js';
 
 dotenv.config();
@@ -34,6 +33,7 @@ passport.use('42', new FortyTwoStrategy({
       username: profile.login || profile.emails[0]?.value.split('@')[0],
       first_name: profile.name?.givenName,
       last_name: profile.name?.familyName,
+      picture_url: profile.photos?.[0]?.value || profile._json?.image?.link,
     });
     return done(null, user);
   } catch (error) {
@@ -52,25 +52,7 @@ passport.use('google', new GoogleStrategy({
       username: profile.emails[0]?.value.split('@')[0],
       first_name: profile.name?.givenName,
       last_name: profile.name?.familyName,
-    });
-    return done(null, user);
-  } catch (error) {
-    return done(error, false);
-  }
-}));
-
-passport.use('github', new GithubStrategy({
-  clientID: process.env.OAUTH_GITHUB_CLIENT_ID,
-  clientSecret: process.env.OAUTH_GITHUB_CLIENT_SECRET,
-  callbackURL: process.env.OAUTH_GITHUB_CALLBACK_URL,
-}, async (accessToken, refreshToken, profile, done) => {
-  try {
-    const user = await findOrCreateOAuthUser('github', profile.id.toString(), {
-      email: profile.displayName + "@github.com",
-      username: profile.displayName,
-      first_name: profile.displayName,
-      last_name: profile.displayName,
-      avatar: profile.avatar_url,
+      picture_url: profile.photos?.[0]?.value,
     });
     return done(null, user);
   } catch (error) {

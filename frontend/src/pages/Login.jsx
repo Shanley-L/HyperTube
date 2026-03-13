@@ -108,11 +108,6 @@ function LoginPage() {
                 <img src={"./src/assets/42.png"} alt={t('login.fortyTwoAlt')} />
               </button>
             </a>
-            <a href={`${import.meta.env.VITE_BACKEND_URL}/api/auth/github`}>
-              <button className="oauth-button" type="button">
-                <img src={"./src/assets/github-logo.webp"} alt={t('login.githubAlt')} />
-              </button>
-            </a>
           </div>
         </div>
       </PosterBackground>

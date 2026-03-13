@@ -77,6 +77,9 @@
   },
   "profileModal": {
     "title": "Mon profil",
+    "photo": "Photo de profil",
+    "changePhoto": "Changer la photo",
+    "photoHint": "JPEG, PNG, WebP ou GIF, max 2 Mo",
     "close": "Fermer",
     "username": "Pseudo",
     "firstName": "Prénom",
@@ -105,26 +108,5 @@
     "878": "Science-Fiction",
     "53": "Thriller",
     "10752": "Guerre"
-  },
-  "comments": {
-    "title": "Commentaires",
-    "addComment": "Ajouter un commentaire",
-    "submit": "Envoyer",
-    "instant": "A l'instant",
-    "minutes": "minutes",
-    "hours": "heures",
-    "minute": "minute",
-    "hour": "heure",
-    "enterToSave": "Entrée pour sauvegarder",
-    "escapeToCancel": "Echap pour annuler",
-    "editComment": "Modifier le commentaire",
-    "deleteComment": "Supprimer le commentaire",
-    "deleteCommentConfirm": "Êtes-vous sûr de vouloir supprimer ce commentaire ?",
-    "deleteCommentConfirmButton": "Supprimer",
-    "deleteCommentCancelButton": "Annuler",
-    "deleteCommentSuccess": "Commentaire supprimé avec succès",
-    "deleteCommentError": "Échec de la suppression du commentaire",
-    "editCommentSuccess": "Commentaire modifié avec succès",
-    "editCommentError": "Échec de la modification du commentaire"
   }
 }

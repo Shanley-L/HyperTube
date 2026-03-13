@@ -77,6 +77,9 @@
   },
   "profileModal": {
     "title": "My profile",
+    "photo": "Profile photo",
+    "changePhoto": "Change photo",
+    "photoHint": "JPEG, PNG, WebP or GIF, max 2 MB",
     "close": "Close",
     "username": "Username",
     "firstName": "First name",
@@ -105,26 +108,5 @@
     "878": "Science fiction",
     "53": "Thriller",
     "10752": "War"
-  },
-  "comments": {
-    "title": "Comments",
-    "addComment": "Add a comment",
-    "editComment": "Edit comment",
-    "submit": "Submit",
-    "enterToSave": "Enter to save",
-    "escapeToCancel": "Escape to cancel",
-    "instant": "Instantly",
-    "minutes": "Minutes ago",
-    "hours": "Hours ago",
-    "minute": "Minute ago",
-    "hour": "Hour ago",
-    "deleteComment": "Delete comment",
-    "deleteCommentConfirm": "Are you sure you want to delete this comment?",
-    "deleteCommentConfirmButton": "Delete",
-    "deleteCommentCancelButton": "Cancel",
-    "deleteCommentSuccess": "Comment deleted successfully",
-    "deleteCommentError": "Failed to delete comment",
-    "editCommentSuccess": "Comment edited successfully",
-    "editCommentError": "Failed to edit comment"
   }
 }

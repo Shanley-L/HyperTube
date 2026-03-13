@@ -88,6 +88,13 @@ Edit `.env` with your configuration:
 - JWT secret
 - Email configuration
 - API keys (OMDb, TMDb, etc.)
+- Optional: **`UPLOADS_ROOT`** — avatar files directory (default: `backend/uploads`). For local dev aligned with Docker, set to the absolute path of `frontend/uploads` or `../frontend/uploads` from `backend/`.
+
+#### Profile avatars (DB, disk, frontend)
+
+- **DB:** `users.profile_picture_url` stores a **relative** path for uploads, e.g. `/uploads/avatars/{userId}.jpg`, so host/port changes do not break stored values. OAuth (Google) still stores full HTTPS URLs.
+- **Docker:** `docker-compose` mounts `./frontend/uploads` → `/app/uploads` on the backend. Avatars are written to `frontend/uploads/avatars/` on the host.
+- **Frontend:** Set **`VITE_API_URL`** to the API base the **browser** can call (e.g. `http://localhost:3001/api` if Docker maps the API to 3001). Avatar URLs use that host for `/uploads/...`. Helmet is configured with **`Cross-Origin-Resource-Policy: cross-origin`** on the API so avatars load from the Vite dev origin (5173).
 
 #### 4. Database Setup
 
