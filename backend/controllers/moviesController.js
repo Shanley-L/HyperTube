@@ -6,6 +6,26 @@ import {
   checkIfMovieIsWatched,
 } from "../models/user.js";
 
+const CAM_REGEX = /\b(CAM|TS|TELESYNC|TC|SCREENER|SCR|HDCAM)\b/i;
+
+const calculateScore = (t) => {
+  let score = 0;
+  const title = t.Title.toUpperCase();
+
+  // Resolution Base Score
+  if (title.includes("2160P") || title.includes("4K")) score += 1000;
+  else if (title.includes("1080P")) score += 500;
+  else if (title.includes("720P")) score += 200;
+
+  // Codec Bonus (x265/HEVC is better for streaming efficiency)
+  if (title.includes("X265") || title.includes("HEVC")) score += 150;
+
+  // Health Score (Seeders) - Capped to avoid skewing too much from fake seeder counts
+  score += Math.min(t.Seeders * 2, 300);
+
+  return score;
+};
+
 const GENRES_MAP = {
   28: "Action",
   12: "Aventure",
@@ -104,31 +124,52 @@ const moviesController = {
     }
   },
   select: async (req, res) => {
-    // 1. Correction du nom (doit matcher ton Axios : selectMovieid)
     const { selectMovieid } = req.body;
-
     if (!selectMovieid) return res.status(400).json({ error: "ID manquant" });
 
     try {
-      // 2. RECUPERER LES INFOS DU FILM (car tu n'as que l'ID)
       const movieRes = await fetch(
         `https://api.themoviedb.org/3/movie/${selectMovieid}?api_key=${process.env.TMDB_API_KEY}&language=fr-FR`,
       );
       const movieData = await movieRes.json();
 
-      // 3. Récupérer l'ID IMDb
-      const idRes = await fetch(
-        `https://api.themoviedb.org/3/movie/${selectMovieid}/external_ids?api_key=${process.env.TMDB_API_KEY}`,
-      );
-      const ids = await idRes.json();
-
-      // 4. Lancer Jackett (On utilise le titre propre de TMDB)
       const searchQuery = `${movieData.title} ${movieData.release_date?.split("-")[0]}`;
       const jackettUrl = `http://localhost:9117/api/v2.0/indexers/all/results?apikey=${process.env.JACKETT_API_KEY}&Query=${encodeURIComponent(searchQuery)}`;
       const jackettRes = await fetch(jackettUrl);
       const jackettData = await jackettRes.json();
 
-      // 5. Réponse propre
+      const rawResults = jackettData.Results || [];
+
+      const filtered = rawResults.filter((t) => !CAM_REGEX.test(t.Title));
+
+      // 2. Score and Category Tiers
+      const tiers = { "4K": [], "1080p": [], "720p": [] };
+
+      filtered.forEach((t) => {
+        const score = calculateScore(t);
+        const item = {
+          title: t.Title,
+          seeders: t.Seeders,
+          size: (t.Size / 1024 ** 3).toFixed(2) + " GB",
+          magnet: t.MagnetUri || t.Link,
+          source: t.Tracker || t.TrackerId || "Unknown",
+          score,
+        };
+
+        const titleUpper = t.Title.toUpperCase();
+        if (titleUpper.includes("2160P") || titleUpper.includes("4K"))
+          tiers["4K"].push(item);
+        else if (titleUpper.includes("1080P")) tiers["1080p"].push(item);
+        else tiers["720p"].push(item);
+      });
+
+      // 3. 3x3 Strategy: Top 3 for each available tier
+      const finalTorrents = [
+        ...tiers["4K"].sort((a, b) => b.score - a.score).slice(0, 3),
+        ...tiers["1080p"].sort((a, b) => b.score - a.score).slice(0, 3),
+        ...tiers["720p"].sort((a, b) => b.score - a.score).slice(0, 3),
+      ];
+
       return res.json({
         info: {
           title: movieData.title,
@@ -138,14 +179,7 @@ const moviesController = {
           genres: movieData.genres.map((g) => g.name),
           overview: movieData.overview,
         },
-        torrents: jackettData.Results.slice(0, 15).map((t) => ({
-          // Increased to 15 for better variety
-          title: t.Title,
-          seeders: t.Seeders,
-          size: (t.Size / 1024 ** 3).toFixed(2) + " GB",
-          magnet: t.MagnetUri || t.Link,
-          source: t.Tracker || t.TrackerId || "Unknown Indexer",
-        })),
+        torrents: finalTorrents,
       });
     } catch (error) {
       console.error(error);

@@ -173,8 +173,8 @@ export default function MovieTest() {
       });
 
       setWatchedMovies((prev) => [...prev, movieId.toString()]);
-
-      console.log("Response : ", response.data);
+      console.log(response.data);
+      console.log(addWatched.data);
       navigate(`/movie/${movieId}`);
     } catch (error) {
       console.error("Error while fetching movie");
