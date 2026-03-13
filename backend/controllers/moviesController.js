@@ -8,24 +8,6 @@ import {
 
 const CAM_REGEX = /\b(CAM|TS|TELESYNC|TC|SCREENER|SCR|HDCAM)\b/i;
 
-const calculateScore = (t) => {
-  let score = 0;
-  const title = t.Title.toUpperCase();
-
-  // Resolution Base Score
-  if (title.includes("2160P") || title.includes("4K")) score += 1000;
-  else if (title.includes("1080P")) score += 500;
-  else if (title.includes("720P")) score += 200;
-
-  // Codec Bonus (x265/HEVC is better for streaming efficiency)
-  if (title.includes("X265") || title.includes("HEVC")) score += 150;
-
-  // Health Score (Seeders) - Capped to avoid skewing too much from fake seeder counts
-  score += Math.min(t.Seeders * 2, 300);
-
-  return score;
-};
-
 const GENRES_MAP = {
   28: "Action",
   12: "Aventure",
@@ -44,6 +26,50 @@ const GENRES_MAP = {
   878: "Science-Fiction",
   53: "Thriller",
   10752: "Guerre",
+};
+
+const BEST_TRACKERS = [
+  "udp://tracker.opentrackr.org:1337/announce",
+  "udp://tracker.leechers-paradise.org:6969/announce",
+  "udp://9.rarbg.to:2710/announce",
+  "udp://p4p.arenabg.com:1337/announce",
+  "udp://movies.zsw.ca:6969/announce",
+  "udp://tracker.cyberia.is:6969/announce",
+]
+  .map((t) => `&tr=${encodeURIComponent(t)}`)
+  .join("");
+
+const calculateScore = (t) => {
+  let score = 0;
+  const title = t.Title.toUpperCase();
+  const seeders = parseInt(t.Seeders) || 0;
+  const leechers = parseInt(t.Peers) || 0;
+  const source = (t.Tracker || t.TrackerId || "").toLowerCase();
+
+  // Minimum Viable Swarm
+  if (seeders < 3) score -= 1000;
+  if (seeders > 10) score += 500;
+
+  // Ratio Check
+  if (seeders > 0 && leechers > 0) {
+    const ratio = seeders / leechers;
+    if (ratio > 0.5 && ratio < 5) score += 400;
+  } else if (seeders > 0 && leechers === 0) score -= 200;
+
+  score += Math.min(seeders, 500);
+
+  if (source.includes("yts")) score += 300;
+  if (source.includes("thepiratebay")) score += 300;
+
+  // Size Check
+  const sizeGB = t.Size / 1024 ** 3;
+  if (sizeGB > 1.5 && sizeGB < 5) score += 300;
+  else if (sizeGB > 10) score -= 150; // Too heavy to start quickly
+
+  // Encoding Check
+  if (title.includes("X265") || title.includes("HEVC")) score += 150;
+
+  return score;
 };
 
 const moviesController = {
@@ -139,31 +165,61 @@ const moviesController = {
       const jackettData = await jackettRes.json();
 
       const rawResults = jackettData.Results || [];
-
       const filtered = rawResults.filter((t) => !CAM_REGEX.test(t.Title));
 
-      // 2. Score and Category Tiers
-      const tiers = { "4K": [], "1080p": [], "720p": [] };
+      // 1. DEDUPLICATION LOOP
+      const uniqueTorrents = new Map();
 
       filtered.forEach((t) => {
         const score = calculateScore(t);
+        const originalMagnet = t.MagnetUri || t.Link;
+
+        const hashMatch = originalMagnet.match(/btih:([a-zA-Z0-9]+)/i);
+        let uniqueKey;
+        if (hashMatch) {
+          uniqueKey = hashMatch[1].toLowerCase();
+        } else {
+          const cleanTitle = t.Title.replace(/[^A-Z0-9]/gi, "").toUpperCase();
+          uniqueKey = `proxy_${cleanTitle}_${t.Size}`;
+        }
+
+        const boostedMagnet = originalMagnet.startsWith("magnet:?")
+          ? originalMagnet + BEST_TRACKERS
+          : originalMagnet;
+
         const item = {
           title: t.Title,
           seeders: t.Seeders,
           size: (t.Size / 1024 ** 3).toFixed(2) + " GB",
-          magnet: t.MagnetUri || t.Link,
+          magnet: boostedMagnet,
           source: t.Tracker || t.TrackerId || "Unknown",
           score,
+          hash: uniqueKey,
         };
 
-        const titleUpper = t.Title.toUpperCase();
+        // 🚀 IMPORTANT: Actually save it to the Map!
+        // If we see the same hash, we keep the one with more seeders
+        if (
+          !uniqueTorrents.has(uniqueKey) ||
+          item.seeders > uniqueTorrents.get(uniqueKey).seeders
+        ) {
+          uniqueTorrents.set(uniqueKey, item);
+        }
+      });
+
+      // 2. CATEGORIZATION LOOP (Outside the first loop!)
+      const deduplicatedArray = Array.from(uniqueTorrents.values());
+      const tiers = { "4K": [], "1080p": [], "720p": [] }; // 🚀 Defined here, accessible below!
+
+      deduplicatedArray.forEach((item) => {
+        const titleUpper = item.title.toUpperCase();
         if (titleUpper.includes("2160P") || titleUpper.includes("4K"))
           tiers["4K"].push(item);
         else if (titleUpper.includes("1080P")) tiers["1080p"].push(item);
         else tiers["720p"].push(item);
       });
 
-      // 3. 3x3 Strategy: Top 3 for each available tier
+      // 3. 3x3 Strategy
       const finalTorrents = [
         ...tiers["4K"].sort((a, b) => b.score - a.score).slice(0, 3),
         ...tiers["1080p"].sort((a, b) => b.score - a.score).slice(0, 3),
@@ -178,6 +234,7 @@ const moviesController = {
           rating: Math.round(movieData.vote_average * 10) / 10,
           genres: movieData.genres.map((g) => g.name),
           overview: movieData.overview,
+          runtime: movieData.runtime,
         },
         torrents: finalTorrents,
       });

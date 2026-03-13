@@ -31,14 +31,18 @@ router.get("/status/:id", (req, res) => {
   const magnetHash = req.params.id.toLowerCase();
   const engine = activeEngines[magnetHash];
 
-  if (!engine || !engine.files || engine.files.length === 0) {
+  if (!engine || !engine.swarm) {
     return res.json({
       status: "searching",
       health: "loading",
       peers: 0,
-      progress: 0,
+      speed: "0",
+      progress: "0 MB",
     });
   }
+
+  const speedBytes = engine.swarm.downloadSpeed();
+  const speedMB = (speedBytes / (1024 * 1024)).toFixed(2);
 
   const activePeers = engine.swarm.wires.length;
   const downloadedMB = (engine.swarm.downloaded / (1024 * 1024)).toFixed(2);
@@ -48,9 +52,11 @@ router.get("/status/:id", (req, res) => {
   else if (activePeers > 0) health = "okay";
 
   res.json({
-    status: "streaming",
+    status:
+      engine.swarm.downloaded > 5 * 1024 * 1024 ? "streaming" : "buffering",
     peers: activePeers,
     health: health,
+    speed: speedMB,
     progress: downloadedMB + " MB",
   });
 });
@@ -92,6 +98,7 @@ function handleMp4Streaming(file, req, res) {
 router.get(ApiRoutes.Stream, async (req, res) => {
   const magnetId = req.params.id;
   const jackettUrl = req.query.url;
+  const movieDuration = req.query.duration;
 
   res.setHeader("Access-Control-Allow-Origin", "http://localhost:5173");
   res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
@@ -109,6 +116,7 @@ router.get(ApiRoutes.Stream, async (req, res) => {
   if (!activeEngines[magnetHash]) {
     activeEngines[magnetHash] = torrentStream(magnetLink, {
       path: "./downloads",
+      port: 6881,
       trackers: [
         "udp://tracker.leechers-paradise.org:6969",
         "udp://tracker.opentrackr.org:1337/announce",
@@ -144,7 +152,7 @@ router.get(ApiRoutes.Stream, async (req, res) => {
         return;
       }
 
-      if (engine.swarm.downloaded > 5 * 1024 * 1024) {
+      if (engine.swarm.downloaded > 6 * 1024 * 1024) {
         clearInterval(checkBuffer);
 
         res.writeHead(200, {
@@ -153,7 +161,8 @@ router.get(ApiRoutes.Stream, async (req, res) => {
           "Cross-Origin-Resource-Policy": "cross-origin",
         });
 
-        ffmpeg(file.createReadStream())
+        const command = ffmpeg(file.createReadStream())
+          .inputOptions(["-probesize 32", "-analyzeduration 0"])
           .videoCodec("libx264")
           .audioCodec("aac")
           .format("mp4")
@@ -161,7 +170,14 @@ router.get(ApiRoutes.Stream, async (req, res) => {
             "-movflags frag_keyframe+empty_moov+default_base_moof+faststart",
             "-preset ultrafast",
             "-tune zerolatency",
-          ])
+            "-threads 0",
+          ]);
+
+        if (movieDuration && !isNaN(movieDuration) && movieDuration > 0) {
+          command.outputOptions([`-t ${movieDuration}`]);
+        }
+
+        command
           .on("error", (err) => {
             console.log("FFmpeg Error:", err.message);
             if (!res.headersSent) res.end();
