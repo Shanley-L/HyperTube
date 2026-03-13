@@ -3,10 +3,11 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import ProfileModal from "./ProfilModal.jsx";
+import { avatarSrcWithBust } from "../utils/avatar";
 
 function Header() {
   const { t, i18n } = useTranslation();
-  const { user, logout, isAuthenticated } = useAuth();
+  const { user, logout, isAuthenticated, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
@@ -74,12 +75,19 @@ function Header() {
             <div className="header-user-menu" ref={dropdownRef}>
               <button
                 type="button"
-                className="header-username-button"
+                className="header-username-button header-user-trigger"
                 onClick={() => setDropdownOpen(!dropdownOpen)}
                 aria-expanded={dropdownOpen}
                 aria-haspopup="true"
               >
-                {t('header.hello', { username: user?.username ?? '' })}
+                <img
+                  className="header-avatar"
+                  src={avatarSrcWithBust(user?.profile_picture_url, user?.avatarBust)}
+                  alt=""
+                  width={32}
+                  height={32}
+                />
+                <span>{t('header.hello', { username: user?.username ?? '' })}</span>
               </button>
               {dropdownOpen && (
                 <div className="header-user-menu-dropdown">
@@ -106,18 +114,25 @@ function Header() {
           </>
         ) : (
           <>
-            <button
-              type="button"
-              className="header-login-button"
-              onClick={() => navigate('/login')}
-            >
-              {t('header.login')}
-            </button>
+            {location.pathname === '/movies' && (
+              <button
+                type="button"
+                className="header-login-button"
+                onClick={() => navigate('/login')}
+              >
+                {t('header.login')}
+              </button>
+            )}
             {langButtons('header-lang header-lang-standalone')}
           </>
         )}
       </div>
-      {isProfileModalOpen && (<ProfileModal onClose={() => setIsProfileModalOpen(false)} onSuccess={() => setIsProfileModalOpen(false)} />)}
+      {isProfileModalOpen && (
+        <ProfileModal
+          onClose={() => { setIsProfileModalOpen(false); refreshProfile(); }}
+          onSuccess={() => { setIsProfileModalOpen(false); refreshProfile(); }}
+        />
+      )}
     </header>
   );
 }

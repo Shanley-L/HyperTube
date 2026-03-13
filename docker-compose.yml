@@ -28,6 +28,9 @@ services:
     environment:
       DB_HOST: db
       PORT: 3000
+      UPLOADS_ROOT: /app/uploads
+    volumes:
+      - ./frontend/uploads:/app/uploads
     ports:
       - "${BACKEND_PORT:-3001}:3000"
     depends_on:

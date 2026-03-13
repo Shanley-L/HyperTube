@@ -1,10 +1,14 @@
 import express from 'express';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
 import pool from './config/database.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 import passport from './config/passport.js';
 import authRoutes from './routes/auth.js';
 import moviesRoutes from './routes/movies.js';
@@ -12,13 +16,19 @@ import commentsRoutes from './routes/comments.js';
 
 import userRoutes from './routes/users.js';
 
-dotenv.config();
+import { UPLOADS_ROOT } from './config/uploads.js';
 
+dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(passport.initialize());
-app.use(helmet());
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+    crossOriginEmbedderPolicy: false,
+  })
+);
 app.use(morgan('combined'));
 app.use(cors());
 app.use(express.json());
@@ -30,6 +40,7 @@ const limiter = rateLimit({
 });
 
 app.use('/api/', limiter);
+app.use('/uploads', express.static(UPLOADS_ROOT));
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'HyperTube API is running' });
