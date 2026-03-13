@@ -8,6 +8,7 @@ import pool from './config/database.js';
 import passport from './config/passport.js';
 import authRoutes from './routes/auth.js';
 import moviesRoutes from './routes/movies.js';
+import commentsRoutes from './routes/comments.js';
 
 import userRoutes from './routes/users.js';
 
@@ -51,6 +52,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 
 app.use('/api/movies', moviesRoutes);
+app.use('/api/comments', commentsRoutes);
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
