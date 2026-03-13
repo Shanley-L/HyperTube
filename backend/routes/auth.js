@@ -51,4 +51,11 @@ router.get('/google/callback', passport.authenticate('google', { session: false,
     res.redirect(`${process.env.FRONTEND_URL}/auth/callback?token=${token}`);
   });
 
+router.get('/github', passport.authenticate('github', {scope: ['profile', 'email']}));
+router.get('/github/callback', passport.authenticate('github', { session: false, failureRedirect: `${process.env.FRONTEND_URL}/login?error=github_auth_failed` }),
+  async (req, res) => {
+    const token = jwt.sign({userId: req.user.id, username: req.user.username}, process.env.JWT_SECRET, { expiresIn: '1h'});
+    res.redirect(`${process.env.FRONTEND_URL}/auth/callback?token=${token}`);
+  });
+
 export default router;
