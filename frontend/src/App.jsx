@@ -9,6 +9,12 @@ import Header from './components/Header.jsx';
 import Footer from './components/Footer.jsx';
 import AuthCallBackPage from './pages/AuthCallBack.jsx';
 import CommentPage from './pages/Comment.jsx';
+import { useTranslation } from 'react-i18next';
+
+function HomeRoute() {
+  const { t } = useTranslation();
+  return <div>{t('app.homePage')}</div>;
+}
 
 function App() {
   return (
@@ -19,7 +25,7 @@ function App() {
           <main>
             <div className="main-routes">
             <Routes>
-              <Route path="/" element={<div>Home Page</div>} />
+              <Route path="/" element={<HomeRoute />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />

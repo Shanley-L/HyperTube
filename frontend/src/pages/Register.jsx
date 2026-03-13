@@ -1,9 +1,11 @@
 import api from "../services/api";
 import { Link, useNavigate } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import PosterBackground from "../components/PosterBackground";
 
 function RegisterPage() {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState({
     email: '',
     username: '',
@@ -15,7 +17,6 @@ function RegisterPage() {
   const [error, setError] = useState(null);
   const [fieldErrors, setFieldErrors] = useState({});
   const navigate = useNavigate();
-
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -42,7 +43,7 @@ function RegisterPage() {
         });
         setFieldErrors(errors);
       } else {
-        setError('Registration failed due to a network error');
+        setError(t('register.networkError'));
       }
     } catch (error) {
       if (error.response?.data?.errors) {
@@ -55,7 +56,7 @@ function RegisterPage() {
       } else if (error.response?.data?.message) {
         setError(error.response?.data?.message);
       } else {
-        setError('Registration failed due to a network error');
+        setError(t('register.networkError'));
       }
     }
     finally {
@@ -66,44 +67,45 @@ function RegisterPage() {
   return (
     <PosterBackground>
       <div className="register-page">
-        <h1>Register</h1>
+        <h1>{t('register.title')}</h1>
         {error && <div className="error-message">{error}</div>}
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label htmlFor="email">Email</label>
+            <label htmlFor="email">{t('register.email')}</label>
             <input type="email" id="email" name="email" value={formData.email} onChange={handleInputChange} required disabled={loading} className={fieldErrors.email ? 'error' : ''} />
             {fieldErrors.email && <div className="error-message">{fieldErrors.email}</div>}
           </div>
           <div className="form-group">
-            <label htmlFor="username">Username</label>
+            <label htmlFor="username">{t('register.username')}</label>
             <input type="text" id="username" name="username" value={formData.username} onChange={handleInputChange} required disabled={loading} className={fieldErrors.username ? 'error' : ''} />
             {fieldErrors.username && <div className="error-message">{fieldErrors.username}</div>}
           </div>
           <div className="form-group">
-            <label htmlFor="first_name">First Name</label>
+            <label htmlFor="first_name">{t('register.firstName')}</label>
             <input type="text" id="first_name" name="first_name" value={formData.first_name} onChange={handleInputChange} required disabled={loading} className={fieldErrors.first_name ? 'error' : ''} />
             {fieldErrors.first_name && <div className="error-message">{fieldErrors.first_name}</div>}
           </div>
           <div className="form-group">
-            <label htmlFor="last_name">Last Name</label>
+            <label htmlFor="last_name">{t('register.lastName')}</label>
             <input type="text" id="last_name" name="last_name" value={formData.last_name} onChange={handleInputChange} required disabled={loading} className={fieldErrors.last_name ? 'error' : ''} />
             {fieldErrors.last_name && <div className="error-message">{fieldErrors.last_name}</div>}
           </div>
           <div className="form-group">
-            <label htmlFor="password">Password</label>
+            <label htmlFor="password">{t('register.password')}</label>
             <input type="password" id="password" name="password" value={formData.password} onChange={handleInputChange} required disabled={loading} className={fieldErrors.password ? 'error' : ''} />
             {fieldErrors.password && <div className="error-message">{fieldErrors.password}</div>}
           </div>
         <button type="submit" disabled={loading}>
-          {loading ? 'Registering...' : 'Register'}
+          {loading ? t('register.registering') : t('register.submit')}
         </button>
         </form>
         <div className="login-link">
-            <Link to="/login"><h2>Already have an account?</h2></Link>
+            <Link to="/login"><h2>{t('register.alreadyHaveAccount')}</h2></Link>
         </div>
       </div>
     </PosterBackground>
   );
 }
 
-export default RegisterPage
+export default RegisterPage;
+

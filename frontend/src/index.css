@@ -94,7 +94,7 @@ footer {
   top: 100%;
   right: 0;
   margin-top: 0.25rem;
-  min-width: 120px;
+  min-width: 140px;
   background: #1a1a1a;
   border: 1px solid rgb(245, 131, 0);
   border-radius: 4px;
@@ -102,6 +102,81 @@ footer {
   z-index: 100;
   display: flex;
   flex-direction: column;
+}
+
+.header-user-menu-dropdown-lang {
+  border-top: 1px solid rgba(245, 131, 0, 0.35);
+  padding: 0.5rem 0.75rem;
+}
+
+.header-lang-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+}
+
+.header-lang-row button,
+.header-lang-standalone button {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  font-size: 0.9rem;
+  opacity: 0.75;
+  padding: 0.15rem 0.35rem;
+}
+
+.header-lang-row button:hover,
+.header-lang-standalone button:hover {
+  opacity: 1;
+}
+
+.header-lang-active {
+  font-weight: 700;
+  opacity: 1 !important;
+}
+
+.header-lang-sep {
+  color: #666;
+  user-select: none;
+}
+
+.header-lang-standalone {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.header-login-button {
+  padding: 0.4rem 0.9rem;
+  background: rgb(245, 131, 0);
+  color: #111;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.header-login-button:hover {
+  filter: brightness(1.08);
+}
+
+.header-logout-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.35rem;
+  background: none;
+  border: none;
+  color: rgb(245, 131, 0);
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.header-logout-icon:hover {
+  background: rgba(245, 131, 0, 0.15);
+  color: #fff;
 }
 
 .header-user-menu-dropdown button {
@@ -113,7 +188,7 @@ footer {
   cursor: pointer;
 }
 
-.header-user-menu-dropdown button:hover {
+.header-user-menu-dropdown > button:hover {
   background: rgba(245, 131, 0, 0.2);
 }
 

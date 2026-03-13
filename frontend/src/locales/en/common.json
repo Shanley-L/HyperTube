@@ -1,0 +1,109 @@
+{
+  "app": { "homePage": "Home" },
+  "header": {
+    "hello": "Hello, {{username}}",
+    "profile": "Profile",
+    "logout": "Logout",
+    "login": "Log in",
+    "langEn": "EN",
+    "langFr": "FR"
+  },
+  "login": {
+    "title": "Login",
+    "username": "Username",
+    "password": "Password",
+    "submit": "Login",
+    "loggingIn": "Logging in…",
+    "noAccount": "Don't have an account?",
+    "register": "Register",
+    "forgotPassword": "Forgot your password?",
+    "resetPassword": "Reset password",
+    "networkError": "Login failed due to a network error",
+    "googleAlt": "Log in with Google",
+    "fortyTwoAlt": "Log in with 42"
+  },
+  "register": {
+    "title": "Register",
+    "email": "Email",
+    "username": "Username",
+    "firstName": "First name",
+    "lastName": "Last name",
+    "password": "Password",
+    "submit": "Register",
+    "registering": "Registering…",
+    "alreadyHaveAccount": "Already have an account?",
+    "networkError": "Registration failed due to a network error"
+  },
+  "forgotPassword": {
+    "emailSent": "An email has been sent to reset your password.",
+    "askAgain": "No email? Request again and check your address.",
+    "prompt": "Enter your email to receive a reset link",
+    "emailPlaceholder": "Email",
+    "submit": "Send",
+    "backToLogin": "Back to login"
+  },
+  "resetPassword": {
+    "expired": "This link has expired",
+    "askAgain": "Request a new link.",
+    "newPasswordTitle": "New password",
+    "mismatch": "Passwords do not match.",
+    "newPasswordPlaceholder": "New password",
+    "confirmPlaceholder": "Confirm password",
+    "submit": "Send",
+    "backToLogin": "Back to login"
+  },
+  "movies": {
+    "searchPlaceholder": "Search for a movie…",
+    "search": "Search",
+    "sortBy": "Sort by:",
+    "sortDefault": "Default order",
+    "sortTitleAsc": "Title (A → Z)",
+    "sortTitleDesc": "Title (Z → A)",
+    "sortYearDesc": "Year (newest first)",
+    "sortYearAsc": "Year (oldest first)",
+    "sortRatingDesc": "Rating (high → low)",
+    "sortRatingAsc": "Rating (low → high)",
+    "genre": "Genre:",
+    "allGenres": "All genres",
+    "year": "Year:",
+    "yearPlaceholder": "e.g. 2023",
+    "minRating": "Min rating:",
+    "ratingPlaceholder": "0–10",
+    "watched": "Watched",
+    "loading": "Loading…"
+  },
+  "footer": {
+    "by": "By MJS"
+  },
+  "profileModal": {
+    "title": "My profile",
+    "close": "Close",
+    "username": "Username",
+    "firstName": "First name",
+    "lastName": "Last name",
+    "email": "Email",
+    "cancel": "Cancel",
+    "save": "Save",
+    "saving": "Saving…",
+    "updateError": "Could not update profile"
+  },
+  "genres": {
+    "28": "Action",
+    "12": "Adventure",
+    "16": "Animation",
+    "35": "Comedy",
+    "80": "Crime",
+    "99": "Documentary",
+    "18": "Drama",
+    "10751": "Family",
+    "14": "Fantasy",
+    "36": "History",
+    "27": "Horror",
+    "10402": "Music",
+    "9648": "Mystery",
+    "10749": "Romance",
+    "878": "Science fiction",
+    "53": "Thriller",
+    "10752": "War"
+  }
+}

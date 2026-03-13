@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import api from "../services/api";
+import { useTranslation } from "react-i18next";
 
 function ProfileModal({ onClose, onSuccess }) {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [formData, setFormData] = useState({
     username: "",
@@ -48,7 +50,7 @@ function ProfileModal({ onClose, onSuccess }) {
       await api.patch("/users/me", formData);
       onSuccess();
     } catch (err) {
-      setError(err.response?.data?.message ?? "Erreur lors de la mise à jour");
+      setError(err.response?.data?.message ?? t('profileModal.updateError'));
     } finally {
       setLoading(false);
     }
@@ -58,15 +60,15 @@ function ProfileModal({ onClose, onSuccess }) {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>Mon profil</h2>
-          <button type="button" className="modal-close" onClick={onClose} aria-label="Fermer">
+          <h2>{t('profileModal.title')}</h2>
+          <button type="button" className="modal-close" onClick={onClose} aria-label={t('profileModal.close')}>
             ×
           </button>
         </div>
         <form onSubmit={handleSubmit}>
           {error && <p className="modal-error">{error}</p>}
           <label>
-            Pseudo
+            {t('profileModal.username')}
             <input
               type="text"
               name="username"
@@ -77,7 +79,7 @@ function ProfileModal({ onClose, onSuccess }) {
             />
           </label>
           <label>
-            Prénom
+            {t('profileModal.firstName')}
             <input
               type="text"
               name="first_name"
@@ -86,7 +88,7 @@ function ProfileModal({ onClose, onSuccess }) {
             />
           </label>
           <label>
-            Nom
+            {t('profileModal.lastName')}
             <input
               type="text"
               name="last_name"
@@ -95,7 +97,7 @@ function ProfileModal({ onClose, onSuccess }) {
             />
           </label>
           <label>
-            Email
+            {t('profileModal.email')}
             <input
               type="email"
               name="email"
@@ -106,10 +108,10 @@ function ProfileModal({ onClose, onSuccess }) {
           </label>
           <div className="modal-actions">
             <button type="button" onClick={onClose}>
-              Annuler
+              {t('profileModal.cancel')}
             </button>
             <button type="submit" disabled={loading}>
-              {loading ? "Enregistrement…" : "Enregistrer"}
+              {loading ? t('profileModal.saving') : t('profileModal.save')}
             </button>
           </div>
         </form>

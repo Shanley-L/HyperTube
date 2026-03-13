@@ -1,0 +1,109 @@
+{
+  "app": { "homePage": "Accueil" },
+  "header": {
+    "hello": "Bonjour, {{username}}",
+    "profile": "Profil",
+    "logout": "Déconnexion",
+    "login": "Connexion",
+    "langEn": "EN",
+    "langFr": "FR"
+  },
+  "login": {
+    "title": "Connexion",
+    "username": "Nom d'utilisateur",
+    "password": "Mot de passe",
+    "submit": "Connexion",
+    "loggingIn": "Connexion…",
+    "noAccount": "Pas encore de compte ?",
+    "register": "S'inscrire",
+    "forgotPassword": "Mot de passe oublié ?",
+    "resetPassword": "Réinitialiser le mot de passe",
+    "networkError": "Échec de la connexion (réseau)",
+    "googleAlt": "Se connecter avec Google",
+    "fortyTwoAlt": "Se connecter avec 42"
+  },
+  "register": {
+    "title": "Inscription",
+    "email": "E-mail",
+    "username": "Nom d'utilisateur",
+    "firstName": "Prénom",
+    "lastName": "Nom",
+    "password": "Mot de passe",
+    "submit": "S'inscrire",
+    "registering": "Inscription…",
+    "alreadyHaveAccount": "Déjà un compte ?",
+    "networkError": "Échec de l'inscription (réseau)"
+  },
+  "forgotPassword": {
+    "emailSent": "Un e-mail a été envoyé pour réinitialiser votre mot de passe.",
+    "askAgain": "Pas d'e-mail ? Demandez à nouveau et vérifiez votre adresse.",
+    "prompt": "Entrez votre e-mail pour recevoir un lien de réinitialisation",
+    "emailPlaceholder": "E-mail",
+    "submit": "Envoyer",
+    "backToLogin": "Retour à la connexion"
+  },
+  "resetPassword": {
+    "expired": "Ce lien a expiré",
+    "askAgain": "Demander un nouveau lien.",
+    "newPasswordTitle": "Nouveau mot de passe",
+    "mismatch": "Les mots de passe ne correspondent pas.",
+    "newPasswordPlaceholder": "Nouveau mot de passe",
+    "confirmPlaceholder": "Confirmer le mot de passe",
+    "submit": "Envoyer",
+    "backToLogin": "Retour à la connexion"
+  },
+  "movies": {
+    "searchPlaceholder": "Chercher un film…",
+    "search": "Rechercher",
+    "sortBy": "Trier par :",
+    "sortDefault": "Ordre par défaut",
+    "sortTitleAsc": "Titre (A → Z)",
+    "sortTitleDesc": "Titre (Z → A)",
+    "sortYearDesc": "Année (récent → ancien)",
+    "sortYearAsc": "Année (ancien → récent)",
+    "sortRatingDesc": "Note (haute → basse)",
+    "sortRatingAsc": "Note (basse → haute)",
+    "genre": "Genre :",
+    "allGenres": "Tous les genres",
+    "year": "Année :",
+    "yearPlaceholder": "ex. 2023",
+    "minRating": "Note min :",
+    "ratingPlaceholder": "0–10",
+    "watched": "Vu",
+    "loading": "Chargement…"
+  },
+  "footer": {
+    "by": "Par MJS"
+  },
+  "profileModal": {
+    "title": "Mon profil",
+    "close": "Fermer",
+    "username": "Pseudo",
+    "firstName": "Prénom",
+    "lastName": "Nom",
+    "email": "E-mail",
+    "cancel": "Annuler",
+    "save": "Enregistrer",
+    "saving": "Enregistrement…",
+    "updateError": "Impossible de mettre à jour le profil"
+  },
+  "genres": {
+    "28": "Action",
+    "12": "Aventure",
+    "16": "Animation",
+    "35": "Comédie",
+    "80": "Crime",
+    "99": "Documentaire",
+    "18": "Drame",
+    "10751": "Familial",
+    "14": "Fantastique",
+    "36": "Histoire",
+    "27": "Horreur",
+    "10402": "Musique",
+    "9648": "Mystère",
+    "10749": "Romance",
+    "878": "Science-Fiction",
+    "53": "Thriller",
+    "10752": "Guerre"
+  }
+}
