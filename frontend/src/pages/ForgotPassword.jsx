@@ -1,49 +1,45 @@
 import api from "../services/api";
-
 import { useState } from "react";
+import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
-const ResetPasswordForm = () => {
-    const [isSubmitted, setIsSubmitted] = useState(false);
+function ForgotPasswordPage() {
+  const { t } = useTranslation();
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [formData, setFormData] = useState({ email: '' });
 
-    const [formData, setFormData] = useState({email: ''});
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  }
 
-    const [error, setError] = useState('');
-
-    const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await api.post('auth/forgot-password', formData)
+      if (response.status == 200) setIsSubmitted(true);
+    } catch {
     }
+  }
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setError('');
-
-        try {
-            const response = await api.post('auth/forgot-password', formData)
-            if (response.status == 200) setIsSubmitted(true);
-        } catch (error) {
-            console.log(error)
-        }
-    }
-
-    if (isSubmitted) {
-        return (
-            <div className="form-container">
-                <h3>An email has been sent to reset your password.</h3>
-                <a href="/login">No email ? please ask again and check your email adress.</a>
-            </div>
-        )
-    }
-
+  if (isSubmitted) {
     return (
-        <div className="form-container">
-            <h3>Add your email to get your reset password link</h3>
-            <form onSubmit={handleSubmit}>
-                <input type="email" name="email" placeholder="Email" onChange=
-                {handleChange} required />
-                <button type="submit">Envoyer</button>
-            </form>
-        </div>   
+      <div className="form-container">
+        <h3>{t('forgotPassword.emailSent')}</h3>
+        <Link to="/login">{t('forgotPassword.askAgain')}</Link>
+      </div>
     )
+  }
+
+  return (
+    <div className="form-container">
+      <h3>{t('forgotPassword.prompt')}</h3>
+      <form onSubmit={handleSubmit}>
+        <input type="email" name="email" placeholder={t('forgotPassword.emailPlaceholder')} onChange={handleChange} required />
+        <button type="submit">{t('forgotPassword.submit')}</button>
+      </form>
+      <p><Link to="/login">{t('forgotPassword.backToLogin')}</Link></p>
+    </div>
+  )
 }
 
-export default ResetPasswordForm;
+export default ForgotPasswordPage;
