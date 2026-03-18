@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
 import api from "../services/api";
 import { Trash2, Edit3, Send, XCircle } from 'lucide-react';
+import { useTranslation } from "react-i18next";
 
 const movieId = 123456;
 
 
 function Comment() {
+    const { t } = useTranslation();
     const [comments, setComments] = useState([]);
     const [editingId, setEditingId] = useState(null);
     const [editText, setEditText] = useState("");
@@ -58,7 +60,7 @@ function Comment() {
 
     return (    
         <div className="comments-section">
-            <h1 className="comments-title">Commentaires</h1>
+            <h1 className="comments-title">{t('comments.title')}</h1>
             
             <div className="comments-list">
                 {comments.map((c) => (
@@ -69,13 +71,17 @@ function Comment() {
                                 {(() => {
                                     const diffInSeconds = Math.floor((new Date() - new Date(c.created_at)) / 1000);
                                     
-                                    if (diffInSeconds < 60) return "À l'instant";
+                                    if (diffInSeconds < 60) return t('comments.instant');
                                     
                                     const diffInMinutes = Math.floor(diffInSeconds / 60);
-                                    if (diffInMinutes < 60) return `Il y a ${diffInMinutes} min`;
+                                    if (diffInMinutes < 60 )
+                                        if (diffInMinutes == 1) return `${diffInMinutes} ${t('comments.minute')}`;
+                                        else return `${diffInMinutes} ${t('comments.minutes')}`;
                                     
                                     const diffInHours = Math.floor(diffInMinutes / 60);
-                                    if (diffInHours < 24) return `Il y a ${diffInHours} h`;
+                                    if (diffInHours < 24)
+                                        if (diffInHours == 1) return `${diffInHours} ${t('comments.hour')}`;
+                                        else return `${diffInHours} ${t('comments.hours')}`;
                                     
                                     return new Date(c.created_at).toLocaleDateString('fr-FR');
                                 })()}
@@ -101,7 +107,7 @@ function Comment() {
 
                                 <button 
                                     className="delete-icon-editing" // Nouvelle classe CSS dédiée
-                                    title="Supprimer définitivement"
+                                    title={t('comments.deleteComment')}
                                     onClick={(e) => {
                                         e.stopPropagation(); // Évite de fermer l'édition
                                         handleDelete(c.id);  // Appelle votre fonction de suppression existante
@@ -111,7 +117,7 @@ function Comment() {
                                 </button>
 
                                 <small style={{ color: '#666', fontSize: '0.7rem', display: 'block', marginTop: '5px' }}>
-                                    Enter to save, Escape to cancel
+                                    {t('comments.enterToSave')}, {t('comments.escapeToCancel')}
                                 </small>
                             </div>
                         ) : (
@@ -126,10 +132,10 @@ function Comment() {
                     name="comment"
                     type="text"
                     className="comment-input" 
-                    placeholder="Ajouter un commentaire"
+                    placeholder={t('comments.addComment')}
                     required 
                 />
-                <button type="submit" className="comment-submit">Envoyer</button>
+                <button type="submit" className="comment-submit">{t('comments.submit')}</button>
             </form>
         </div>  
     );
