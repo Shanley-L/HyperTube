@@ -125,6 +125,140 @@ export const checkIfMovieIsWatched = async (userId, movieId) => {
   return result.rows.length > 0;
 };
 
+export const addFavoriteMovie = async (userId, movieId) => {
+  const query = `
+    INSERT INTO favorite_movies (user_id, movie_id)
+    VALUES ($1, $2)
+    ON CONFLICT (user_id, movie_id) DO NOTHING
+    RETURNING movie_id
+  `;
+  const result = await pool.query(query, [userId, movieId]);
+  return result.rows[0]?.movie_id ?? null;
+};
+
+export const removeFavoriteMovie = async (userId, movieId) => {
+  const query = 'DELETE FROM favorite_movies WHERE user_id = $1 AND movie_id = $2 RETURNING movie_id';
+  const result = await pool.query(query, [userId, movieId]);
+  return result.rows[0]?.movie_id ?? null;
+};
+
+export const getFavoriteMovies = async (userId) => {
+  const query = 'SELECT movie_id FROM favorite_movies WHERE user_id = $1 ORDER BY created_at DESC';
+  const result = await pool.query(query, [userId]);
+  return result.rows.map((row) => row.movie_id);
+};
+
+const upsertMovieFromTMDB = async (movieId) => {
+  const tmdbKey = process.env.TMDB_API_KEY;
+  if (!tmdbKey) throw new Error('TMDB_API_KEY is not configured');
+
+  const movieRes = await fetch(
+    `https://api.themoviedb.org/3/movie/${movieId}?api_key=${encodeURIComponent(tmdbKey)}&language=fr-FR`
+  );
+  if (!movieRes.ok) throw new Error('TMDB movie request failed');
+  const movieData = await movieRes.json();
+
+  const year = movieData?.release_date?.split?.('-')?.[0] ? Number(movieData.release_date.split('-')[0]) : null;
+  const genreIds = Array.isArray(movieData.genre_ids) ? movieData.genre_ids.join(',') : '';
+
+  const query = `
+    INSERT INTO movies (title, year, imdb_rating, tmdb_id, cover_image_url, summary, genre)
+    VALUES ($1, $2, $3, $4, $5, $6, $7)
+    ON CONFLICT (tmdb_id) DO UPDATE SET
+      title = EXCLUDED.title,
+      year = EXCLUDED.year,
+      imdb_rating = EXCLUDED.imdb_rating,
+      cover_image_url = EXCLUDED.cover_image_url,
+      summary = EXCLUDED.summary,
+      genre = EXCLUDED.genre,
+      updated_at = CURRENT_TIMESTAMP
+    RETURNING tmdb_id
+  `;
+
+  await pool.query(query, [
+    movieData?.title ?? '',
+    year,
+    movieData?.vote_average ? Math.round(movieData.vote_average * 10) / 10 : null,
+    String(movieData?.id ?? movieId),
+    movieData?.poster_path ?? null,
+    movieData?.overview ?? null,
+    genreIds,
+  ]);
+};
+
+export const upsertFavoriteMovieAndMetadata = async (userId, movieId) => {
+  await upsertMovieFromTMDB(movieId);
+
+  const favQuery = `
+    INSERT INTO favorite_movies (user_id, movie_id)
+    VALUES ($1, $2)
+    ON CONFLICT (user_id, movie_id) DO NOTHING
+    RETURNING movie_id
+  `;
+  const result = await pool.query(favQuery, [userId, movieId]);
+  return result.rows[0]?.movie_id ?? null;
+};
+
+export const getFavoriteMovieCardsFromDB = async (userId) => {
+  const query = `
+    SELECT
+      f.movie_id,
+      m.tmdb_id,
+      m.title,
+      m.cover_image_url,
+      m.year,
+      m.imdb_rating,
+      m.genre
+    FROM favorite_movies f
+    LEFT JOIN movies m ON m.tmdb_id = f.movie_id
+    WHERE f.user_id = $1
+    ORDER BY f.created_at DESC
+  `;
+
+  const result = await pool.query(query, [userId]);
+  const missing = result.rows
+    .filter((row) => !row.title)
+    .map((row) => String(row.movie_id))
+    .filter((id) => id && id.length > 0);
+
+  const uniqueMissing = Array.from(new Set(missing));
+  for (const id of uniqueMissing) {
+    await upsertMovieFromTMDB(id);
+  }
+
+  const query2 = `
+    SELECT
+      m.tmdb_id,
+      m.title,
+      m.cover_image_url,
+      m.year,
+      m.imdb_rating,
+      m.genre
+    FROM favorite_movies f
+    JOIN movies m ON m.tmdb_id = f.movie_id
+    WHERE f.user_id = $1
+    ORDER BY f.created_at DESC
+  `;
+
+  const finalResult = await pool.query(query2, [userId]);
+
+  return finalResult.rows.map((row) => {
+    const genreIds =
+      typeof row.genre === 'string' && row.genre.trim().length > 0
+        ? row.genre.split(',').map((x) => Number(x)).filter((n) => Number.isFinite(n))
+        : [];
+    const year = row.year != null ? Number(row.year) : null;
+    return {
+      id: String(row.tmdb_id),
+      title: row.title,
+      poster_path: row.cover_image_url,
+      release_date: year ? `${year}-01-01` : null,
+      vote_average: row.imdb_rating != null ? Number(row.imdb_rating) : null,
+      genre_ids: genreIds,
+    };
+  });
+};
+
 export const addComment = async (userId, userName, movieId, comment) => {
   const query = 'INSERT INTO comments (user_id, user_name, movie_id, content) VALUES ($1, $2, $3, $4) RETURNING *';
   const values = [userId, userName, movieId, comment];

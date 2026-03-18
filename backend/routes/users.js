@@ -9,6 +9,10 @@ import {
   findByEmail,
   toSafeUser,
   updateUserProfile,
+  removeFavoriteMovie,
+  getFavoriteMovies,
+  upsertFavoriteMovieAndMetadata,
+  getFavoriteMovieCardsFromDB,
 } from '../models/user.js';
 
 const storage = multer.diskStorage({
@@ -77,6 +81,54 @@ router.post('/me/avatar', authMiddleware, (req, res) => {
     await updateUserProfile(userId, { profile_picture_url });
     res.json({ profile_picture_url });
   });
+});
+
+router.get('/me/favorites', authMiddleware, async (req, res) => {
+  try {
+    const { userId } = req.user || {};
+    if (!userId) return res.status(400).json({ message: 'Invalid token payload' });
+    const favorites = await getFavoriteMovies(userId);
+    res.json(favorites);
+  } catch (e) {
+    res.status(500).json({ message: e.message || 'Failed to load favorites' });
+  }
+});
+
+router.post('/me/favorites', authMiddleware, async (req, res) => {
+  try {
+    const { userId } = req.user || {};
+    if (!userId) return res.status(400).json({ message: 'Invalid token payload' });
+    const movieId = String(req.body?.movieId ?? '').trim();
+    if (!movieId) return res.status(400).json({ message: 'movieId is required' });
+    await upsertFavoriteMovieAndMetadata(userId, movieId);
+    res.json({ movieId, favorited: true });
+  } catch (e) {
+    res.status(500).json({ message: e.message || 'Failed to add favorite' });
+  }
+});
+
+router.get('/me/favorite-movies', authMiddleware, async (req, res) => {
+  try {
+    const { userId } = req.user || {};
+    if (!userId) return res.status(400).json({ message: 'Invalid token payload' });
+    const favorites = await getFavoriteMovieCardsFromDB(userId);
+    res.json(favorites);
+  } catch (e) {
+    res.status(500).json({ message: e.message || 'Failed to load favorite movies' });
+  }
+});
+
+router.delete('/me/favorites/:movieId', authMiddleware, async (req, res) => {
+  try {
+    const { userId } = req.user || {};
+    if (!userId) return res.status(400).json({ message: 'Invalid token payload' });
+    const movieId = String(req.params?.movieId ?? '').trim();
+    if (!movieId) return res.status(400).json({ message: 'movieId is required' });
+    await removeFavoriteMovie(userId, movieId);
+    res.json({ movieId, favorited: false });
+  } catch (e) {
+    res.status(500).json({ message: e.message || 'Failed to remove favorite' });
+  }
 });
 
 export default router;

@@ -69,12 +69,23 @@ CREATE TABLE watched_movies (
     UNIQUE(user_id, movie_id)
 );
 
+CREATE TABLE favorite_movies (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    movie_id VARCHAR(50) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, movie_id)
+);
+
 CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_users_username ON users(username);
 CREATE INDEX idx_movies_title ON movies(title);
 CREATE INDEX idx_movies_year ON movies(year);
+CREATE UNIQUE INDEX idx_movies_tmdb_id ON movies(tmdb_id);
 CREATE INDEX idx_user_movie_watched_user ON watched_movies(user_id);
 CREATE INDEX idx_user_movie_watched_movie ON watched_movies(movie_id);
+CREATE INDEX idx_user_movie_favorite_user ON favorite_movies(user_id);
+CREATE INDEX idx_user_movie_favorite_movie ON favorite_movies(movie_id);
 CREATE INDEX idx_comments_movie ON comments(movie_id);
 CREATE INDEX idx_comments_user ON comments(user_id);
 CREATE INDEX idx_movies_last_watched ON movies(last_watched_at);

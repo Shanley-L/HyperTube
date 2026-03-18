@@ -15,6 +15,8 @@ export default function MovieTest() {
   const [query, setQuery] = useState('');
   const [movies, setMovies] = useState([]);
   const [watchedMovies, setWatchedMovies] = useState([]);
+  const [favoriteMovies, setFavoriteMovies] = useState([]);
+  const [favoritesOnly, setFavoritesOnly] = useState(false);
   const [sortBy, setSortBy] = useState('default');
   const [filterGenre, setFilterGenre] = useState('');
   const [filterYear, setFilterYear] = useState('');
@@ -23,6 +25,9 @@ export default function MovieTest() {
   const [hasMorePages, setHasMorePages] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const loadMoreMovies = useRef(null);
+  const userListsLoadedRef = useRef(false);
+  const userListsLoadPromiseRef = useRef(null);
+  const requestedDiscoverPagesRef = useRef(new Set());
 
   useEffect(() => {
     discoverMovies();
@@ -35,10 +40,15 @@ export default function MovieTest() {
       setFilterGenre('');
       setFilterYear('');
       setMinRating('');
-      discoverMovies();
+      if (favoritesOnly) {
+        fetchFavoriteMovieCards();
+      } else {
+        requestedDiscoverPagesRef.current.clear();
+        discoverMovies(1);
+      }
       navigate(location.pathname, { replace: true, state: {} });
     }
-  }, [location.state, location.pathname, navigate]);
+  }, [location.state, location.pathname, navigate, favoritesOnly]);
 
   const availableGenres = useMemo(() => {
     const ids = new Set();
@@ -54,6 +64,10 @@ export default function MovieTest() {
 
   const filteredAndSortedMovies = useMemo(() => {
     let list = [...movies];
+    if (favoritesOnly) {
+      const fav = new Set(favoriteMovies.map((id) => id.toString()));
+      list = list.filter((m) => fav.has(m.id?.toString?.() ?? String(m.id)));
+    }
     if (filterGenre) {
       const genreId = Number(filterGenre);
       list = list.filter((m) => (m.genre_ids || []).includes(genreId));
@@ -85,17 +99,43 @@ export default function MovieTest() {
           return 0;
       }
     });
-  }, [movies, sortBy, filterGenre, filterYear, minRating, i18n.language]);
+  }, [movies, favoritesOnly, favoriteMovies, sortBy, filterGenre, filterYear, minRating, i18n.language]);
+
+  const refreshUserMovieLists = async () => {
+    if (!isAuthenticated) {
+      setWatchedMovies([]);
+      setFavoriteMovies([]);
+      setFavoritesOnly(false);
+      return;
+    }
+    const [watchedRes, favoritesRes] = await Promise.all([
+      api.get('movies/getwatchedmovies'),
+      api.get('users/me/favorites'),
+    ]);
+    setWatchedMovies(watchedRes.data || []);
+    setFavoriteMovies(favoritesRes.data || []);
+  };
+
+  const ensureUserListsLoaded = async () => {
+    if (!isAuthenticated) return;
+    if (userListsLoadedRef.current) return;
+    if (!userListsLoadPromiseRef.current) {
+      userListsLoadPromiseRef.current = (async () => {
+        await refreshUserMovieLists();
+        userListsLoadedRef.current = true;
+      })().finally(() => {
+        userListsLoadPromiseRef.current = null;
+      });
+    }
+    await userListsLoadPromiseRef.current;
+  };
 
   const discoverMovies = async (pageParam = 1) => {
     if (isLoading) return;
+    if (requestedDiscoverPagesRef.current.has(pageParam)) return;
     try {
-      if (isAuthenticated) {
-        const watchedRes = await api.get(`movies/getwatchedmovies`);
-        setWatchedMovies(watchedRes.data);
-      } else {
-        setWatchedMovies([]);
-      }
+      if (favoritesOnly) return;
+      requestedDiscoverPagesRef.current.add(pageParam);
       setIsLoading(true);
       const res = await api.get(`movies/discover`, { params: { page: pageParam } });
       const { results, page: currentPage, total_pages } = res.data;
@@ -104,12 +144,59 @@ export default function MovieTest() {
       setHasMorePages(typeof total_pages === "number" ? (currentPage ?? pageParam) < total_pages : true);
     } catch (err) {
       console.error(err);
+      requestedDiscoverPagesRef.current.delete(pageParam);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchFavoriteMovieCards = async () => {
+    if (!isAuthenticated) return;
+    setIsLoading(true);
+    try {
+      const favoritesRes = await api.get('users/me/favorite-movies');
+      const cards = favoritesRes.data || [];
+      setMovies(cards);
+      const ids = cards
+        .map((c) => (c?.id != null ? c.id.toString() : null))
+        .filter(Boolean);
+      setFavoriteMovies(ids);
+      setPage(1);
+      setHasMorePages(false);
+    } catch (err) {
+      console.error(err);
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
+    if (!isAuthenticated) {
+      userListsLoadedRef.current = false;
+      userListsLoadPromiseRef.current = null;
+      setWatchedMovies([]);
+      setFavoriteMovies([]);
+      setFavoritesOnly(false);
+      return;
+    }
+    ensureUserListsLoaded();
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    if (favoritesOnly) {
+      ensureUserListsLoaded().then(fetchFavoriteMovieCards);
+      return;
+    }
+    setMovies([]);
+    requestedDiscoverPagesRef.current.clear();
+    setPage(1);
+    setHasMorePages(true);
+    discoverMovies(1);
+  }, [favoritesOnly]);
+
+  useEffect(() => {
+    if (favoritesOnly) return;
     const movieList = loadMoreMovies.current;
     if (!movieList) return;
     const observer = new IntersectionObserver((entries) => {
@@ -121,7 +208,7 @@ export default function MovieTest() {
     { root: null, rootMargin: '100px', threshold: 0 });
     observer.observe(movieList);
     return () => observer.disconnect();
-  }, [query, hasMorePages, isLoading, page]);
+  }, [favoritesOnly, query, hasMorePages, isLoading, page]);
 
   const onSearchSubmit = (e) => {
     e.preventDefault();
@@ -129,6 +216,7 @@ export default function MovieTest() {
   };
 
   const handleSearch = async () => {
+    if (favoritesOnly) return;
     if (!isAuthenticated) {
       navigate('/login', { state: { from: '/movies' } });
       return;
@@ -141,15 +229,42 @@ export default function MovieTest() {
     }
   };
 
+  const toggleFavorite = async (e, movieId) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isAuthenticated) {
+      navigate('/login', { state: { from: '/movies' } });
+      return;
+    }
+    const id = movieId.toString();
+    const isFav = favoriteMovies.includes(id);
+    setFavoriteMovies((prev) => (isFav ? prev.filter((x) => x !== id) : [...prev, id]));
+    try {
+      if (isFav) {
+        await api.delete(`users/me/favorites/${encodeURIComponent(id)}`);
+      } else {
+        await api.post('users/me/favorites', { movieId: id });
+      }
+      if (favoritesOnly) {
+        await fetchFavoriteMovieCards();
+      }
+    } catch (err) {
+      console.error(err);
+      setFavoriteMovies((prev) => (isFav ? [...prev, id] : prev.filter((x) => x !== id)));
+    }
+  };
+
   const handleMovieClick = async (movieId) => {
     if (!isAuthenticated) {
       navigate('/login', { state: { from: '/movies' } });
       return;
     }
+    const id = movieId.toString();
+    if (watchedMovies.includes(id)) return;
     try {
       await api.post('movies/select', { selectMovieid: movieId });
       await api.post('movies/watched', { selectMovieid: movieId });
-      setWatchedMovies((prev) => [...prev, movieId.toString()]);
+      setWatchedMovies((prev) => [...prev, id]);
     } catch (error) {
       console.error(error);
     }
@@ -194,6 +309,15 @@ export default function MovieTest() {
       </div>
 
       <div className="filters-bar" style={{ marginBottom: '16px', display: 'flex', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: '10px' }}>
+        <button
+          type="button"
+          className={`favorites-toggle ${favoritesOnly ? 'active' : ''}`}
+          onClick={() => setFavoritesOnly((v) => !v)}
+          disabled={!isAuthenticated}
+          aria-pressed={favoritesOnly}
+        >
+          {t('movies.favoritesOnly', { defaultValue: 'Favorites' })}
+        </button>
         <label htmlFor="filter-genre" style={{ color: '#aaa' }}>{t('movies.genre')}</label>
         <select
           id="filter-genre"
@@ -231,12 +355,22 @@ export default function MovieTest() {
       <ul className="movie-grid" style={{ padding: 0, marginTop: '20px' }}>
         {filteredAndSortedMovies.map((movie) => {
           const isWatched = watchedMovies.includes(movie.id.toString());
+          const isFavorite = favoriteMovies.includes(movie.id.toString());
           return (
             <li
               key={movie.id}
               className={`movie-card ${isWatched ? 'watched' : ''}`}
             >
               <div className="poster-container">
+                <button
+                  type="button"
+                  className={`favorite-btn ${isFavorite ? 'active' : ''}`}
+                  onClick={(e) => toggleFavorite(e, movie.id)}
+                  aria-pressed={isFavorite}
+                  aria-label={isFavorite ? 'Unfavorite' : 'Favorite'}
+                >
+                  ★
+                </button>
                 <img
                   src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`}
                   className="movie-poster"
@@ -258,7 +392,7 @@ export default function MovieTest() {
           );
         })}
       </ul>
-      {!query && (
+      {!query && !favoritesOnly && (
         <div ref={loadMoreMovies} style={{ height: 20, width: '100%' }} aria-hidden="true" />
       )}
       {isLoading && <p style={{ color: '#aaa', marginTop: 8 }}>{t('movies.loading')}</p>}
