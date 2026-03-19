@@ -40,7 +40,8 @@
     "prompt": "Enter your email to receive a reset link",
     "emailPlaceholder": "Email",
     "submit": "Send",
-    "backToLogin": "Back to login"
+    "backToLogin": "Back to login",
+    "networkError": "Request failed due to a network error"
   },
   "resetPassword": {
     "expired": "This link has expired",

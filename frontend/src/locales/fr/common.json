@@ -40,7 +40,8 @@
     "prompt": "Entrez votre e-mail pour recevoir un lien de réinitialisation",
     "emailPlaceholder": "E-mail",
     "submit": "Envoyer",
-    "backToLogin": "Retour à la connexion"
+    "backToLogin": "Retour à la connexion",
+    "networkError": "Échec de la demande (réseau)"
   },
   "resetPassword": {
     "expired": "Ce lien a expiré",

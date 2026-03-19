@@ -7,17 +7,27 @@ function ForgotPasswordPage() {
   const { t } = useTranslation();
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [formData, setFormData] = useState({ email: '' });
+  const [error, setError] = useState('');
 
   const handleChange = (e) => {
+    if (error) {
+      setError('');
+    }
     setFormData({ ...formData, [e.target.name]: e.target.value });
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
     try {
       const response = await api.post('auth/forgot-password', formData)
-      if (response.status == 200) setIsSubmitted(true);
-    } catch {
+      if (response.status === 200) setIsSubmitted(true);
+    } catch (err) {
+      if (err.response?.data?.message) {
+        setError(err.response.data.message);
+      } else {
+        setError(t('forgotPassword.networkError'));
+      }
     }
   }
 
@@ -36,6 +46,7 @@ function ForgotPasswordPage() {
     <div className="forgot-password-page-wrapper">
       <div className="forgot-password-page">
         <h3>{t('forgotPassword.prompt')}</h3>
+        {error && <div className="error-message">{error}</div>}
         <form onSubmit={handleSubmit}>
           <input type="email" name="email" placeholder={t('forgotPassword.emailPlaceholder')} onChange={handleChange} required />
           <button type="submit">{t('forgotPassword.submit')}</button>

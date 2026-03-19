@@ -361,14 +361,16 @@ footer {
 }
 
 .login-page .error-message,
-.register-page .error-message {
+.register-page .error-message,
+.forgot-password-page .error-message {
   color: #e74c3c;
   font-size: 0.85rem;
   margin-top: 0.25rem;
 }
 
 .login-page > .error-message,
-.register-page > .error-message {
+.register-page > .error-message,
+.forgot-password-page > .error-message {
   margin-bottom: 1rem;
   padding: 0.5rem;
   background: rgba(231, 76, 60, 0.15);
