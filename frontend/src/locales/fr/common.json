@@ -70,7 +70,8 @@
     "minRating": "Note min :",
     "ratingPlaceholder": "0–10",
     "watched": "Vu",
-    "loading": "Chargement…"
+    "loading": "Chargement…",
+    "favoritesOnly": "Favoris"
   },
   "footer": {
     "by": "Par MJS"

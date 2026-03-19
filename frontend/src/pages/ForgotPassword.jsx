@@ -23,21 +23,25 @@ function ForgotPasswordPage() {
 
   if (isSubmitted) {
     return (
-      <div className="form-container">
-        <h3>{t('forgotPassword.emailSent')}</h3>
-        <Link to="/login">{t('forgotPassword.askAgain')}</Link>
+      <div className="forgot-password-page-wrapper">
+        <div className="forgot-password-page">
+          <h3>{t('forgotPassword.emailSent')}</h3>
+          <Link to="/login">{t('forgotPassword.askAgain')}</Link>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="form-container">
-      <h3>{t('forgotPassword.prompt')}</h3>
-      <form onSubmit={handleSubmit}>
-        <input type="email" name="email" placeholder={t('forgotPassword.emailPlaceholder')} onChange={handleChange} required />
-        <button type="submit">{t('forgotPassword.submit')}</button>
-      </form>
-      <p><Link to="/login">{t('forgotPassword.backToLogin')}</Link></p>
+    <div className="forgot-password-page-wrapper">
+      <div className="forgot-password-page">
+        <h3>{t('forgotPassword.prompt')}</h3>
+        <form onSubmit={handleSubmit}>
+          <input type="email" name="email" placeholder={t('forgotPassword.emailPlaceholder')} onChange={handleChange} required />
+          <button type="submit">{t('forgotPassword.submit')}</button>
+        </form>
+        <p><Link to="/login">{t('forgotPassword.backToLogin')}</Link></p>
+      </div>
     </div>
   )
 }

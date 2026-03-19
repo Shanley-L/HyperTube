@@ -70,7 +70,8 @@
     "minRating": "Min rating:",
     "ratingPlaceholder": "0–10",
     "watched": "Watched",
-    "loading": "Loading…"
+    "loading": "Loading…",
+    "favoritesOnly": "Favorites"
   },
   "footer": {
     "by": "By MJS"

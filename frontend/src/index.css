@@ -295,7 +295,8 @@ footer {
 }
 
 .login-page,
-.register-page {
+.register-page,
+.forgot-password-page {
   max-width: 420px;
   margin: 0 auto;
   padding: 2rem;
@@ -329,7 +330,8 @@ footer {
 }
 
 .login-page input,
-.register-page input {
+.register-page input,
+.forgot-password-page input {
   width: 100%;
   padding: 0.6rem 0.75rem;
   background: #0d0d0d;
@@ -340,7 +342,8 @@ footer {
 }
 
 .login-page input:focus,
-.register-page input:focus {
+.register-page input:focus,
+.forgot-password-page input:focus {
   outline: none;
   border-color: rgb(245, 131, 0);
   box-shadow: 0 0 0 2px rgba(245, 131, 0, 0.2);
@@ -373,7 +376,8 @@ footer {
 }
 
 .login-page button[type="submit"],
-.register-page button[type="submit"] {
+.register-page button[type="submit"],
+.forgot-password-page button[type="submit"] {
   width: 100%;
   padding: 0.75rem;
   margin-top: 0.5rem;
@@ -387,12 +391,14 @@ footer {
 }
 
 .login-page button[type="submit"]:hover:not(:disabled),
-.register-page button[type="submit"]:hover:not(:disabled) {
+.register-page button[type="submit"]:hover:not(:disabled),
+.forgot-password-page button[type="submit"]:hover:not(:disabled) {
   background: rgb(255, 155, 30);
 }
 
 .login-page button[type="submit"]:disabled,
-.register-page button[type="submit"]:disabled {
+.register-page button[type="submit"]:disabled,
+.forgot-password-page button[type="submit"]:disabled {
   opacity: 0.7;
   cursor: not-allowed;
 }
@@ -404,15 +410,38 @@ footer {
   color: #b0b0b0;
 }
 
+.forgot-password-page p {
+  margin-top: 1rem;
+  text-align: center;
+  color: #b0b0b0;
+}
+
 .login-page a,
-.register-page a {
+.register-page a,
+.forgot-password-page a {
   color: rgb(245, 131, 0);
   text-decoration: none;
 }
 
 .login-page a:hover,
-.register-page a:hover {
+.register-page a:hover,
+.forgot-password-page a:hover {
   text-decoration: underline;
+}
+
+.forgot-password-page h3 {
+  color: #f5f5f5;
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.forgot-password-page-wrapper {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
 }
 
 .login-page .oauth-section {

@@ -112,8 +112,14 @@ export default function MovieTest() {
       api.get('movies/getwatchedmovies'),
       api.get('users/me/favorites'),
     ]);
-    setWatchedMovies(watchedRes.data || []);
-    setFavoriteMovies(favoritesRes.data || []);
+    const watchedIds = Array.isArray(watchedRes.data)
+      ? watchedRes.data.map((id) => id?.toString?.()).filter(Boolean)
+      : [];
+    const favoriteIds = Array.isArray(favoritesRes.data)
+      ? favoritesRes.data.map((id) => id?.toString?.()).filter(Boolean)
+      : [];
+    setWatchedMovies(watchedIds);
+    setFavoriteMovies(favoriteIds);
   };
 
   const ensureUserListsLoaded = async () => {
@@ -316,7 +322,7 @@ export default function MovieTest() {
           disabled={!isAuthenticated}
           aria-pressed={favoritesOnly}
         >
-          {t('movies.favoritesOnly', { defaultValue: 'Favorites' })}
+          {t('movies.favoritesOnly')}
         </button>
         <label htmlFor="filter-genre" style={{ color: '#aaa' }}>{t('movies.genre')}</label>
         <select
@@ -362,15 +368,17 @@ export default function MovieTest() {
               className={`movie-card ${isWatched ? 'watched' : ''}`}
             >
               <div className="poster-container">
-                <button
-                  type="button"
-                  className={`favorite-btn ${isFavorite ? 'active' : ''}`}
-                  onClick={(e) => toggleFavorite(e, movie.id)}
-                  aria-pressed={isFavorite}
-                  aria-label={isFavorite ? 'Unfavorite' : 'Favorite'}
-                >
-                  ★
-                </button>
+                {isAuthenticated && (
+                  <button
+                    type="button"
+                    className={`favorite-btn ${isFavorite ? 'active' : ''}`}
+                    onClick={(e) => toggleFavorite(e, movie.id)}
+                    aria-pressed={isFavorite}
+                    aria-label={isFavorite ? 'Unfavorite' : 'Favorite'}
+                  >
+                    ★
+                  </button>
+                )}
                 <img
                   src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`}
                   className="movie-poster"
