@@ -144,3 +144,31 @@
     color: #e74c3c; /* Rouge au survol pour indiquer le danger */
     transform: scale(1.1);
 }
+
+.comment-header {
+    position: relative;
+}
+
+.author-tooltip-global {
+    position: fixed; /* 🔥 IMPORTANT pour que la tooltip soit au-dessus de tout */
+    background: #2b2d31;
+    color: white;
+    padding: 10px;
+    border-radius: 8px;
+    width: 220px;
+    z-index: 9999; /* 🔥 Assure que la tooltip est au-dessus de tout */
+    pointer-events: none; /* Empêche la tooltip de capturer les événements */
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    animation: fadeIn 0.1s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-3px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
