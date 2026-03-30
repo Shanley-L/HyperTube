@@ -131,4 +131,16 @@ router.delete('/me/favorites/:movieId', authMiddleware, async (req, res) => {
   }
 });
 
+router.get('/:id', authMiddleware, async (req, res) => {
+  try {
+    const { userId } = req.user || {};
+    if (!userId) return res.status(400).json({ message: 'Invalid token payload' });
+    const user = await findById(req.params.id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    res.json(toSafeUser(user));
+  } catch (e) {
+    res.status(500).json({ message: e.message || 'Failed to load user' });
+  }
+});
+
 export default router;
