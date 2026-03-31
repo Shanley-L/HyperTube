@@ -57,11 +57,19 @@ body {
   font-weight: bold;
 }
 
+.search-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 30px;
+  flex-wrap: wrap;
+}
+
 .search-bar {
   display: flex;
   justify-content: center;
   gap: 10px;
-  margin-bottom: 30px;
 }
 .search-input {
   padding: 12px 20px;
@@ -84,6 +92,14 @@ body {
 }
 .search-btn:hover {
   background: rgba(245, 131, 0, 0.863);
+}
+.search-btn:disabled {
+  background: #555;
+  color: #bbb;
+  cursor: not-allowed;
+}
+.search-btn:disabled:hover {
+  background: #555;
 }
 
 .movie-card.watched .movie-poster {

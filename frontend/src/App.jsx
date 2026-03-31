@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext.jsx';
 import LoginPage from './pages/Login.jsx';
 import RegisterPage from './pages/Register.jsx'
@@ -10,13 +10,6 @@ import Header from './components/Header.jsx';
 import Footer from './components/Footer.jsx';
 import AuthCallBackPage from './pages/AuthCallBack.jsx';
 import CommentPage from './pages/Comment.jsx';
-import { useTranslation } from 'react-i18next';
-
-function HomeRoute() {
-  const { t } = useTranslation();
-  return <div>{t('app.homePage')}</div>;
-}
-
 function App() {
   return (
     <AuthProvider>
@@ -26,7 +19,7 @@ function App() {
           <main>
             <div className="main-routes">
             <Routes>
-              <Route path="/" element={<HomeRoute />} />
+              <Route path="/" element={<Navigate to="/movies" replace />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
 			  <Route path="/movie/:id" element={<MoviePage />} />

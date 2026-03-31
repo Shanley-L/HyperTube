@@ -29,12 +29,23 @@ const GENRE_IDS = [
   10752,
 ];
 
+const dedupeMoviesById = (movies) => {
+  const seenIds = new Set();
+  return movies.filter((movie) => {
+    const movieId = movie?.id?.toString?.();
+    if (!movieId || seenIds.has(movieId)) return false;
+    seenIds.add(movieId);
+    return true;
+  });
+};
+
 export default function MovieTest() {
   const { t, i18n } = useTranslation();
   const { isAuthenticated } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
+  const [hasSearched, setHasSearched] = useState(false);
   const [movies, setMovies] = useState([]);
   const [watchedMovies, setWatchedMovies] = useState([]);
   const [favoriteMovies, setFavoriteMovies] = useState([]);
@@ -58,19 +69,20 @@ export default function MovieTest() {
   useEffect(() => {
     if (location.state?.resetFilters) {
       setQuery("");
+      setHasSearched(false);
+      setFavoritesOnly(false);
       setSortBy("default");
       setFilterGenre("");
       setFilterYear("");
       setMinRating("");
-      if (favoritesOnly) {
-        fetchFavoriteMovieCards();
-      } else {
-        requestedDiscoverPagesRef.current.clear();
-        discoverMovies(1);
-      }
+      setMovies([]);
+      requestedDiscoverPagesRef.current.clear();
+      setPage(1);
+      setHasMorePages(true);
+      discoverMovies(1);
       navigate(location.pathname, { replace: true, state: {} });
     }
-  }, [location.state, location.pathname, navigate, favoritesOnly]);
+  }, [location.state, location.pathname, navigate]);
 
   const availableGenres = useMemo(() => {
     const ids = new Set();
@@ -85,7 +97,7 @@ export default function MovieTest() {
   }, [movies, t, i18n.language]);
 
   const filteredAndSortedMovies = useMemo(() => {
-    let list = [...movies];
+    let list = dedupeMoviesById(movies);
     if (favoritesOnly) {
       const fav = new Set(favoriteMovies.map((id) => id.toString()));
       list = list.filter((m) => fav.has(m.id?.toString?.() ?? String(m.id)));
@@ -186,14 +198,16 @@ export default function MovieTest() {
         params: { page: pageParam },
       });
       const { results, page: currentPage, total_pages } = res.data;
+      const nextResults = Array.isArray(results) ? results : [];
       setMovies((prev) =>
-        pageParam === 1 ? results || [] : [...prev, ...(results || [])],
+        dedupeMoviesById(pageParam === 1 ? nextResults : [...prev, ...nextResults]),
       );
       setPage(currentPage ?? pageParam);
       setHasMorePages(
-        typeof total_pages === "number"
-          ? (currentPage ?? pageParam) < total_pages
-          : true,
+        nextResults.length > 0 &&
+          (typeof total_pages === "number"
+            ? (currentPage ?? pageParam) < total_pages
+            : true),
       );
     } catch (err) {
       console.error(err);
@@ -209,7 +223,7 @@ export default function MovieTest() {
     try {
       const favoritesRes = await api.get("users/me/favorite-movies");
       const cards = favoritesRes.data || [];
-      setMovies(cards);
+      setMovies(dedupeMoviesById(cards));
       const ids = cards
         .map((c) => (c?.id != null ? c.id.toString() : null))
         .filter(Boolean);
@@ -270,6 +284,8 @@ export default function MovieTest() {
     handleSearch();
   };
 
+  const isSearchDisabled = query.trim().length === 0;
+
   const handleSearch = async () => {
     if (favoritesOnly) return;
     if (!isAuthenticated) {
@@ -278,8 +294,9 @@ export default function MovieTest() {
     }
     try {
       const res = await api.get(`movies/search?q=${query}`);
-      console.log(movies);
-      setMovies(res.data);
+      setSortBy("title-asc");
+      setHasSearched(Boolean(query.trim()));
+      setMovies(dedupeMoviesById(res.data || []));
     } catch (err) {
       console.error(err);
     }
@@ -332,18 +349,30 @@ export default function MovieTest() {
 
   return (
     <div style={{ padding: "20px", textAlign: "center" }}>
-      <form className="search-bar" onSubmit={onSearchSubmit}>
-        <input
-          className="search-input"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder={t("movies.searchPlaceholder")}
-        />
-        <button type="submit" className="search-btn">
-          {t("movies.search")}
+      <div className="search-row">
+        <button
+          type="button"
+          className={`favorites-toggle ${favoritesOnly ? "active" : ""}`}
+          onClick={() => setFavoritesOnly((v) => !v)}
+          disabled={!isAuthenticated}
+          aria-pressed={favoritesOnly}
+        >
+          {t("movies.favoritesOnly")}
         </button>
-      </form>
+        <form className="search-bar" onSubmit={onSearchSubmit}>
+          <input
+            className="search-input"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={t("movies.searchPlaceholder")}
+          />
+          <button type="submit" className="search-btn" disabled={isSearchDisabled}>
+            {t("movies.search")}
+          </button>
+        </form>
+      </div>
 
+      {hasSearched && (
       <div
         className="sort-bar"
         style={{
@@ -371,8 +400,7 @@ export default function MovieTest() {
             outline: "none",
           }}
         >
-          <option value="default">{t("movies.sortDefault")}</option>
-          <option value="title-asc">{t("movies.sortTitleAsc")}</option>
+          <option value="title-asc">{t("movies.sortDefault")}</option>
           <option value="title-desc">{t("movies.sortTitleDesc")}</option>
           <option value="year-desc">{t("movies.sortYearDesc")}</option>
           <option value="year-asc">{t("movies.sortYearAsc")}</option>
@@ -380,6 +408,7 @@ export default function MovieTest() {
           <option value="ratings-asc">{t("movies.sortRatingAsc")}</option>
         </select>
       </div>
+      )}
 
       <div
         className="filters-bar"
@@ -392,15 +421,6 @@ export default function MovieTest() {
           gap: "10px",
         }}
       >
-        <button
-          type="button"
-          className={`favorites-toggle ${favoritesOnly ? "active" : ""}`}
-          onClick={() => setFavoritesOnly((v) => !v)}
-          disabled={!isAuthenticated}
-          aria-pressed={favoritesOnly}
-        >
-          {t("movies.favoritesOnly")}
-        </button>
         <label htmlFor="filter-genre" style={{ color: "#aaa" }}>
           {t("movies.genre")}
         </label>
@@ -517,7 +537,7 @@ export default function MovieTest() {
       {!query && !favoritesOnly && (
         <div
           ref={loadMoreMovies}
-          style={{ height: 20, width: "100%" }}
+          style={{ height: 50, width: "100%" }}
           aria-hidden="true"
         />
       )}
