@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import api from "../services/api";
+import Comment from "../pages/Comment.jsx";
 
 const getCleanQuality = (title) => {
   if (!title) return { resolution: "SD", isHeavy: false };
@@ -219,6 +220,9 @@ const MoviePage = () => {
           <p style={{ color: "#f5c518", fontSize: "1.5rem" }}>
             ★ {info.rating}
           </p>
+          <p style={{ lineHeight: "1.6", paddingTop: "20px" }}>
+            {info.overview}
+          </p>
           <div style={{ marginTop: "30px" }}>
             {qualityOrder.map(
               (res) =>
@@ -299,6 +303,7 @@ const MoviePage = () => {
         ) : (
           <p style={{ textAlign: "center" }}>Sélectionnez un torrent...</p>
         )}
+        <Comment />
       </div>
     </div>
   );
