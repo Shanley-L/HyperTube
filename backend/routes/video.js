@@ -179,6 +179,12 @@ router.get(ApiRoutes.Stream, async (req, res) => {
 
         command
           .on("error", (err) => {
+            if (
+              err.message.includes("Output pipe closed") ||
+              err.message.includes("SIGKILL")
+            ) {
+              return;
+            }
             console.log("FFmpeg Error:", err.message);
             if (!res.headersSent) res.end();
           })

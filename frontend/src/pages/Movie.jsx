@@ -287,6 +287,7 @@ const MoviePage = () => {
             status={torrentStatus.status}
           />
         )}
+
         {videoUrl ? (
           <div style={{ maxWidth: "1000px", margin: "0 auto" }}>
             <video
@@ -301,7 +302,15 @@ const MoviePage = () => {
             </video>
           </div>
         ) : (
-          <p style={{ textAlign: "center" }}>Sélectionnez un torrent...</p>
+          <div style={{ textAlign: "center", padding: "20px" }}>
+            {movieData.torrents && movieData.torrents.length > 0 ? (
+              <p>Sélectionnez un torrent pour lancer le film...</p>
+            ) : (
+              <p style={{ color: "#f44336" }}>
+                Désolé, aucune source n'a été trouvée pour ce film.
+              </p>
+            )}
+          </div>
         )}
         <Comment />
       </div>
