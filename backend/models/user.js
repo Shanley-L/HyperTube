@@ -36,6 +36,12 @@ export const findById = async (id) => {
   return result.rows[0];
 };
 
+export const findAll = async () => {
+  const query = 'SELECT * FROM users';
+  const result = await pool.query(query);
+  return result.rows;
+};
+
 export const updateResetToken = async (userId, token, expires) => {
   const query = 'UPDATE users SET reset_password_token = $1, reset_password_expires = $2 WHERE id = $3'
   const values = [token, expires, userId];

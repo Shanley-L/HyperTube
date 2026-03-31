@@ -19,7 +19,15 @@ function Comment() {
     useEffect(() => {
         const fetchComments = async () => {
             const response = await api.get('/comments/' + movieId);
+            for (const comment of response.data) {
+                const userResponse = await api.get('/users/' + comment.user_id);
+                comment.profile_picture_url = userResponse.data.profile_picture_url;
+                if (comment.profile_picture_url === null) {
+                    comment.profile_picture_url = "/avatar-silhouette.svg";
+                }
+            }
             setComments(response.data);
+            console.log("comments", response.data);
         };
         fetchComments();
     }, []);
@@ -30,7 +38,6 @@ function Comment() {
             movieId: movieId,
             comment: e.target.comment.value,
         });
-
         setComments([response.data, ...comments]);
         e.target.reset();
     };
@@ -60,8 +67,9 @@ function Comment() {
 
         try {
             const response = await api.get('/users/' + userId);
-
+            response.data.profile_picture_url = response.data.profile_picture_url || "/avatar-silhouette.svg";
             setAuthorInfo(response.data);
+            console.log("authorInfo", response.data);
             setHoveredUserId(userId);
 
             // 📍 position souris
@@ -108,7 +116,8 @@ function Comment() {
                                 }
                                 onMouseLeave={handleMouseLeave}
                                 onClick={(e) => e.stopPropagation()}
-                            >
+                                >
+                                {c.profile_picture_url && <img className="comment-profile-picture" src={c.profile_picture_url} alt="" />}
                                 {c.user_name || 'Utilisateur'}
                             </span>
 
@@ -204,6 +213,7 @@ function Comment() {
                         left: tooltipPos.x + 5
                     }}
                 >
+                    <img className="comment-profile-picture" src={authorInfo.profile_picture_url} alt="" />
                     <p><strong>{authorInfo.username}</strong></p>
                     <p>{authorInfo.email}</p>
                 </div>
