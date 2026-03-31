@@ -1,10 +1,29 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useState, useEffect, useMemo, useRef } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from 'react-i18next';
-import '../pages/movies.css'
+import "../pages/movies.css";
 import api from "../services/api";
 import { useAuth } from "../contexts/AuthContext";
 
+const GENRES_MAP = {
+  28: "Action",
+  12: "Aventure",
+  16: "Animation",
+  35: "Comédie",
+  80: "Crime",
+  99: "Documentaire",
+  18: "Drame",
+  10751: "Familial",
+  14: "Fantastique",
+  36: "Histoire",
+  27: "Horreur",
+  10402: "Musique",
+  9648: "Mystère",
+  10749: "Romance",
+  878: "Science-Fiction",
+  53: "Thriller",
+  10752: "Guerre",
+};
 const GENRE_IDS = [28, 12, 16, 35, 80, 99, 18, 10751, 14, 36, 27, 10402, 9648, 10749, 878, 53, 10752];
 
 export default function MovieTest() {
@@ -12,15 +31,15 @@ export default function MovieTest() {
   const { isAuthenticated } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState("");
   const [movies, setMovies] = useState([]);
   const [watchedMovies, setWatchedMovies] = useState([]);
   const [favoriteMovies, setFavoriteMovies] = useState([]);
   const [favoritesOnly, setFavoritesOnly] = useState(false);
-  const [sortBy, setSortBy] = useState('default');
-  const [filterGenre, setFilterGenre] = useState('');
-  const [filterYear, setFilterYear] = useState('');
-  const [minRating, setMinRating] = useState('');
+  const [sortBy, setSortBy] = useState("default");
+  const [filterGenre, setFilterGenre] = useState("");
+  const [filterYear, setFilterYear] = useState("");
+  const [minRating, setMinRating] = useState("");
   const [page, setPage] = useState(1);
   const [hasMorePages, setHasMorePages] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
@@ -73,9 +92,11 @@ export default function MovieTest() {
       list = list.filter((m) => (m.genre_ids || []).includes(genreId));
     }
     if (filterYear) {
-      list = list.filter((m) => (m.release_date || '').slice(0, 4) === filterYear);
+      list = list.filter(
+        (m) => (m.release_date || "").slice(0, 4) === filterYear,
+      );
     }
-    if (minRating !== '') {
+    if (minRating !== "") {
       const threshold = Number(minRating);
       list = list.filter((m) => (m.vote_average ?? 0) >= threshold);
     }
@@ -143,9 +164,13 @@ export default function MovieTest() {
       if (favoritesOnly) return;
       requestedDiscoverPagesRef.current.add(pageParam);
       setIsLoading(true);
-      const res = await api.get(`movies/discover`, { params: { page: pageParam } });
+      const res = await api.get(`movies/discover`, {
+        params: { page: pageParam },
+      });
       const { results, page: currentPage, total_pages } = res.data;
-      setMovies((prev) => pageParam === 1 ? (results || []) : [...prev, ...(results || [])]);
+      setMovies((prev) =>
+        pageParam === 1 ? results || [] : [...prev, ...(results || [])],
+      );
       setPage(currentPage ?? pageParam);
       setHasMorePages(typeof total_pages === "number" ? (currentPage ?? pageParam) < total_pages : true);
     } catch (err) {
@@ -229,6 +254,7 @@ export default function MovieTest() {
     }
     try {
       const res = await api.get(`movies/search?q=${query}`);
+      console.log(movies)
       setMovies(res.data);
     } catch (err) {
       console.error(err);
@@ -271,13 +297,17 @@ export default function MovieTest() {
       await api.post('movies/select', { selectMovieid: movieId });
       await api.post('movies/watched', { selectMovieid: movieId });
       setWatchedMovies((prev) => [...prev, id]);
+      console.log(response.data);
+      console.log(addWatched.data);
+      navigate(`/movie/${movieId}`);
     } catch (error) {
       console.error(error);
     }
-  }
+  };
 
   return (
     <div style={{ padding: '20px', textAlign: 'center' }}>
+    <div style={{ padding: "20px", textAlign: "center" }}>
       <form className="search-bar" onSubmit={onSearchSubmit}>
         <input
           className="search-input"
@@ -288,20 +318,31 @@ export default function MovieTest() {
         <button type="submit" className="search-btn">{t('movies.search')}</button>
       </form>
 
-      <div className="sort-bar" style={{ marginBottom: '16px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px' }}>
-        <label htmlFor="sort-select" style={{ color: '#aaa' }}>{t('movies.sortBy')}</label>
+      <div
+        className="sort-bar"
+        style={{
+          marginBottom: "16px",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          gap: "10px",
+        }}
+      >
+        <label htmlFor="sort-select" style={{ color: "#aaa" }}>
+          {t('movies.sortBy')}
+        </label>
         <select
           id="sort-select"
           value={sortBy}
           onChange={(e) => setSortBy(e.target.value)}
           style={{
-            padding: '8px 14px',
-            borderRadius: '20px',
-            border: 'none',
-            background: '#222',
-            color: '#fff',
-            cursor: 'pointer',
-            outline: 'none',
+            padding: "8px 14px",
+            borderRadius: "20px",
+            border: "none",
+            background: "#222",
+            color: "#fff",
+            cursor: "pointer",
+            outline: "none",
           }}
         >
           <option value="default">{t('movies.sortDefault')}</option>
@@ -329,11 +370,21 @@ export default function MovieTest() {
           id="filter-genre"
           value={filterGenre}
           onChange={(e) => setFilterGenre(e.target.value)}
-          style={{ padding: '8px 14px', borderRadius: '20px', border: 'none', background: '#222', color: '#fff', cursor: 'pointer', outline: 'none' }}
+          style={{
+            padding: "8px 14px",
+            borderRadius: "20px",
+            border: "none",
+            background: "#222",
+            color: "#fff",
+            cursor: "pointer",
+            outline: "none",
+          }}
         >
           <option value="">{t('movies.allGenres')}</option>
           {availableGenres.map((g) => (
-            <option key={g.id} value={g.id}>{g.name}</option>
+            <option key={g.id} value={g.id}>
+              {g.name}
+            </option>
           ))}
         </select>
         <label htmlFor="filter-year" style={{ color: '#aaa' }}>{t('movies.year')}</label>
@@ -343,8 +394,18 @@ export default function MovieTest() {
           inputMode="numeric"
           placeholder={t('movies.yearPlaceholder')}
           value={filterYear}
-          onChange={(e) => setFilterYear(e.target.value.replace(/\D/g, '').slice(0, 4))}
-          style={{ padding: '8px 14px', borderRadius: '20px', border: 'none', background: '#222', color: '#fff', outline: 'none', width: '80px' }}
+          onChange={(e) =>
+            setFilterYear(e.target.value.replace(/\D/g, "").slice(0, 4))
+          }
+          style={{
+            padding: "8px 14px",
+            borderRadius: "20px",
+            border: "none",
+            background: "#222",
+            color: "#fff",
+            outline: "none",
+            width: "80px",
+          }}
         />
         <label htmlFor="filter-rating" style={{ color: '#aaa' }}>{t('movies.minRating')}</label>
         <input
@@ -354,11 +415,19 @@ export default function MovieTest() {
           placeholder={t('movies.ratingPlaceholder')}
           value={minRating}
           onChange={(e) => setMinRating(e.target.value)}
-          style={{ padding: '8px 14px', borderRadius: '20px', border: 'none', background: '#222', color: '#fff', outline: 'none', width: '60px' }}
+          style={{
+            padding: "8px 14px",
+            borderRadius: "20px",
+            border: "none",
+            background: "#222",
+            color: "#fff",
+            outline: "none",
+            width: "60px",
+          }}
         />
       </div>
 
-      <ul className="movie-grid" style={{ padding: 0, marginTop: '20px' }}>
+      <ul className="movie-grid" style={{ padding: 0, marginTop: "20px" }}>
         {filteredAndSortedMovies.map((movie) => {
           const isWatched = watchedMovies.includes(movie.id.toString());
           const isFavorite = favoriteMovies.includes(movie.id.toString());
@@ -387,10 +456,11 @@ export default function MovieTest() {
                 />
                 {isWatched && <span className="watched-badge">✔ {t('movies.watched')}</span>}
               </div>
+              
               <div className="movie-info">
                 <h3 className="movie-title">{movie.title}</h3>
                 <div className="movie-meta">
-                  <span>{movie.release_date?.split('-')[0]}</span>
+                  <span>{movie.release_date?.split("-")[0]}</span>
                   <span className="movie-rating">
                     ⭐ {Math.round(movie.vote_average * 10) / 10}
                   </span>

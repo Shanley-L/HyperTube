@@ -17,6 +17,7 @@ dev: up
 	make -j 2 dev-front dev-back
 
 up:
+	rm -rf ./backend/downloads/*
 	@echo "🐳 Ensuring lockfiles exist for Docker build..."
 	@if [ ! -f backend/package-lock.json ]; then cd backend && $(NPM) install; fi
 	@if [ ! -f frontend/package-lock.json ]; then cd frontend && $(NPM) install; fi
@@ -32,6 +33,7 @@ stop:
 	$(DOCKER_COMPOSE) stop
 
 clean: stop
+	rm -rf ./backend/downloads/*
 	$(DOCKER_COMPOSE) down
 	@echo "🧹 Containers stopped and removed."
 
