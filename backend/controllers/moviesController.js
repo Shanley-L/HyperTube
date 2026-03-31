@@ -5,6 +5,7 @@ import {
   getWatchedMovies,
   checkIfMovieIsWatched,
 } from "../models/user.js";
+import { filterMoviesWithTorrents } from "../services/torrentAvailability.js";
 
 const CAM_REGEX = /\b(CAM|TS|TELESYNC|TC|SCREENER|SCR|HDCAM)\b/i;
 
@@ -79,10 +80,11 @@ const moviesController = {
       const tmdbUrl = `https://api.themoviedb.org/3/discover/movie?api_key=${process.env.TMDB_API_KEY}&language=fr-FR&sort_by=popularity.desc&page=${page}`;
       const tmdbRes = await fetch(tmdbUrl);
       const tmdbData = await tmdbRes.json();
+      const results = await filterMoviesWithTorrents(tmdbData.results || []);
       return res.status(200).json({
         page: tmdbData.page,
         total_pages: tmdbData.total_pages,
-        results: tmdbData.results || [],
+        results,
       });
     } catch (error) {
       console.error(error);
@@ -141,9 +143,8 @@ const moviesController = {
         return res.status(404).json({ error: "Aucun film trouvé sur TMDB" });
       }
 
-      console.log(tmdbData.results);
-
-      return res.status(200).json(tmdbData.results);
+      const results = await filterMoviesWithTorrents(tmdbData.results);
+      return res.status(200).json(results);
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: "Erreur de recherche combinée" });

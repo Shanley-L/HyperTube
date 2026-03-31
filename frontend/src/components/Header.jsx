@@ -61,7 +61,7 @@ function Header() {
       <h1><button
         className="header-title-button"
         type="button"
-        onClick={() => navigate('/movies')}
+        onClick={() => navigate('/movies', { state: { resetFilters: true } })}
         style={{ background: 'none', border: 'none', cursor: 'pointer', fontWeight: 'bold', fontSize: '2rem', color: 'white' }}
       >
         Hyper

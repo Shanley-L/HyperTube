@@ -57,7 +57,7 @@
     "searchPlaceholder": "Search for a movie…",
     "search": "Search",
     "sortBy": "Sort by:",
-    "sortDefault": "Default order",
+    "sortDefault": "Default order (A → Z)",
     "sortTitleAsc": "Title (A → Z)",
     "sortTitleDesc": "Title (Z → A)",
     "sortYearDesc": "Year (newest first)",
