@@ -35,6 +35,14 @@ const upload = multer({
 
 const router = express.Router();
 
+
+// router.get('/', authMiddleware, async (req, res) => {
+//   const { userId } = req.user || {};
+//   if (!userId) return res.status(400).json({ message: 'Invalid token payload' });
+//   const users = await findAll();
+//   res.json(users.map(toSafeUser));
+// });
+
 router.get('/me', authMiddleware, async (req, res) => {
   const { userId } = req.user || {};
   if (!userId) return res.status(400).json({ message: 'Invalid token payload' });
