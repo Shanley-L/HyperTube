@@ -133,8 +133,6 @@ const moviesController = {
       // 1. Trouver le film précis sur TMDB pour avoir l'ID IMDb et l'affiche
       const tmdbUrl = `https://api.themoviedb.org/3/search/movie?api_key=${process.env.TMDB_API_KEY}&query=${encodeURIComponent(q)}&language=fr-FR`;
 
-      console.log("URL TMDB testée :", tmdbUrl);
-
       const tmdbRes = await fetch(tmdbUrl);
       const tmdbData = await tmdbRes.json();
 
@@ -245,8 +243,6 @@ const moviesController = {
     }
   },
   watched: async (req, res) => {
-    console.log("request.body : ", req.body);
-    console.error("request.body : ", req.body);
     const userId = req.user.userId;
     const { selectMovieid } = req.body;
     if (!selectMovieid) return res.status(400).json({ error: "ID manquant" });

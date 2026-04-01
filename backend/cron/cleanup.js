@@ -6,7 +6,7 @@ import pool from '../config/database.js';
 // Run once a day
 // TODO : try with '* * * * *' (every minute) for testing, once ../downloads stores torrent files
 cron.schedule('0 0 * * *', async () => {
-    console.log('🧹 Running daily disk cleanup...');
+    console.log('Running daily disk cleanup...');
     
     const ONE_MONTH_AGO = new Date();
     ONE_MONTH_AGO.setMonth(ONE_MONTH_AGO.getMonth() - 1);

@@ -185,7 +185,7 @@ router.get(ApiRoutes.Stream, async (req, res) => {
             ) {
               return;
             }
-            console.log("FFmpeg Error:", err.message);
+            console.error("FFmpeg Error:", err.message);
             if (!res.headersSent) res.end();
           })
           .pipe(res);

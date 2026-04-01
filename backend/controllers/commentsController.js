@@ -2,25 +2,23 @@ import * as userModel from '../models/user.js';
 
 const commentController = {
     addComment: async (req, res) => {
-    try {
-        const { comment, movieId } = req.body;
-        
-        console.log("Received comment data:", { movieId, comment });
-
-        if (!movieId || !comment) {
-            return res.status(400).json({ message: 'Missing movieId or comment content' });
+        try {
+            const { comment, movieId } = req.body;
+            
+            if (!movieId || !comment) {
+                return res.status(400).json({ message: 'Missing movieId or comment content' });
+            }
+            
+            const userId = req.user.userId;
+            const userName = req.user.username;
+            
+            const result = await userModel.addComment(userId, userName, movieId, comment);
+            res.json(result);
+        } catch (error) {
+            console.error('Error adding comment:', error);
+            res.status(500).json({ message: 'Error adding comment' });
         }
-        
-        const userId = req.user.userId;
-        const userName = req.user.username;
-        
-        const result = await userModel.addComment(userId, userName, movieId, comment);
-        res.json(result);
-    } catch (error) {
-        console.error('Error adding comment:', error);
-        res.status(500).json({ message: 'Error adding comment' });
-    }
-},
+    },
     getComments: async (req, res) => {
         try {
             const { movieId } = req.params; 

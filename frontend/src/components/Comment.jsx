@@ -73,7 +73,6 @@ function Comment({ movieId }) {
         try {
             const response = await api.get(`/users/${userId}`);
             setAuthorInfo(response.data);
-            console.log("authorInfo", response.data);
             setHoveredUserId(userId);
             setTooltipPos({ x: e.clientX, y: e.clientY });
         } catch (error) {
