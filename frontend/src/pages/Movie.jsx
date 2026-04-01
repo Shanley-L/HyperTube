@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import api from "../services/api";
-import Comment from "../pages/Comment.jsx";
+import Comment from "../components/Comment.jsx";
 
 const getCleanQuality = (title) => {
   if (!title) return { resolution: "SD", isHeavy: false };
@@ -66,6 +66,7 @@ const HealthBadge = ({ health, peers, speed, status }) => {
 
 const MoviePage = () => {
   const { id } = useParams();
+  console.log("MoviePage rendering with ID:", id); // 
   const [movieData, setMovieData] = useState(null);
   const [selectedTorrent, setSelectedTorrent] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -312,7 +313,7 @@ const MoviePage = () => {
             )}
           </div>
         )}
-        <Comment />
+        <Comment movieId={id}/>
       </div>
     </div>
   );
