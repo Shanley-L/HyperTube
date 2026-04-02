@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import api from "../services/api";
 import Comment from "../components/Comment.jsx";
+import "./comment.css";
 
 const getCleanQuality = (title) => {
   if (!title) return { resolution: "SD", isHeavy: false };

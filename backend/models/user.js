@@ -272,7 +272,15 @@ export const addComment = async (userId, userName, movieId, comment) => {
 };
 
 export const getComments = async (movieId) => {
-  const query = 'SELECT * FROM comments WHERE movie_id = $1';
+  const query = `
+  SELECT
+    comments.*,
+    users.profile_picture_url,
+    users.username
+  FROM comments
+  JOIN users ON comments.user_id = users.id
+  WHERE comments.movie_id = $1
+  `;
   const result = await pool.query(query, [movieId]);
   return result.rows;
 };

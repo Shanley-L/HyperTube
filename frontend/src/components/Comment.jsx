@@ -12,17 +12,24 @@ function Comment({ movieId }) {
     const [authorInfo, setAuthorInfo] = useState(null);
     const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
 
+    const fetchComments = async () => {
+    if (!movieId) return;
+    try {
+        const response = await api.get(`/comments/${movieId}`);
+        for (const comment of response.data) {
+            if (comment.profile_picture_url == null) {
+                comment.profile_picture_url = '/avatar-silhouette.svg';
+            }
+        }
+        console.log(new Date(response.data[0].created_at).toString());
+        setComments(response.data.reverse());
+    } catch (error) {
+        console.error("Failed to fetch comments", error);
+    }
+};
+
     // 🔄 Fetch comments whenever movieId changes
     useEffect(() => {
-        const fetchComments = async () => {
-            if (!movieId) return;
-            try {
-                const response = await api.get(`/comments/${movieId}`);
-                setComments(response.data);
-            } catch (error) {
-                console.error("Failed to fetch comments", error);
-            }
-        };
         fetchComments();
     }, [movieId]);
 
@@ -35,6 +42,7 @@ function Comment({ movieId }) {
                 comment: content,
             });
             setComments([response.data, ...comments]);
+            fetchComments();
             e.target.reset();
         } catch (error) {
             console.error('Error posting comment:', error);
@@ -98,6 +106,7 @@ function Comment({ movieId }) {
                                     onMouseLeave={() => setHoveredUserId(null)}
                                     onClick={(e) => e.stopPropagation()}
                                 >
+                                    <img className="comment-profile-picture" src={c.profile_picture_url} alt="" />
                                     {c.user_name || 'Utilisateur'}
                                 </span>
                                 <span className="comment-date">

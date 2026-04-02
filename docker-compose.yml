@@ -6,6 +6,7 @@ services:
       POSTGRES_USER: ${DB_USER:-hypertube}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-hypertube}
       POSTGRES_DB: ${DB_NAME:-hypertube}
+      TZ: Europe/Paris
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./backend/database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
@@ -29,6 +30,7 @@ services:
       DB_HOST: db
       PORT: 3000
       UPLOADS_ROOT: /app/uploads
+      TZ: Europe/Paris
     volumes:
       - ./frontend/uploads:/app/uploads
     ports:

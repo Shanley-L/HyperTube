@@ -9,7 +9,6 @@ import MoviesPages from './pages/movies.jsx';
 import Header from './components/Header.jsx';
 import Footer from './components/Footer.jsx';
 import AuthCallBackPage from './pages/AuthCallBack.jsx';
-import CommentPage from './pages/Comment.jsx';
 function App() {
   return (
     <AuthProvider>
@@ -28,7 +27,6 @@ function App() {
               {/* <Route path="/email-confirmation" element={<EmailConfirmation />} /> */}
               <Route path="/reset-password" element={<ResetPasswordPage />} />
               <Route path="/movies" element={<MoviesPages />} />
-              <Route path="/comments" element={<CommentPage />} />
               {/* <Route path="/profile" element={<ProfilePage />} /> */}
               <Route path="/auth/callback" element={<AuthCallBackPage />} />
             </Routes>
