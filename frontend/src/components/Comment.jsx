@@ -86,7 +86,7 @@ function Comment({ movieId }) {
             
             <div className="comments-list">
                 {comments.length === 0 ? (
-                    <p style={{textAlign: 'center', color: '#666'}}>Aucun commentaire pour le moment.</p>
+                    <p style={{textAlign: 'center', color: '#666'}}>{t("comments.NoComments")}</p>
                 ) : (
                     comments.map((c) => (
                         <div key={c.id} className="comment-item" onClick={() => startEditing(c)}>

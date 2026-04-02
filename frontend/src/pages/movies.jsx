@@ -5,25 +5,6 @@ import "../pages/movies.css";
 import api from "../services/api";
 import { useAuth } from "../contexts/AuthContext";
 
-const GENRES_MAP = {
-  28: "Action",
-  12: "Aventure",
-  16: "Animation",
-  35: "Comédie",
-  80: "Crime",
-  99: "Documentaire",
-  18: "Drame",
-  10751: "Familial",
-  14: "Fantastique",
-  36: "Histoire",
-  27: "Horreur",
-  10402: "Musique",
-  9648: "Mystère",
-  10749: "Romance",
-  878: "Science-Fiction",
-  53: "Thriller",
-  10752: "Guerre",
-};
 const GENRE_IDS = [
   28, 12, 16, 35, 80, 99, 18, 10751, 14, 36, 27, 10402, 9648, 10749, 878, 53,
   10752,
@@ -38,6 +19,7 @@ const dedupeMoviesById = (movies) => {
     return true;
   });
 };
+
 
 export default function MovieTest() {
   const { t, i18n } = useTranslation();
@@ -188,14 +170,18 @@ export default function MovieTest() {
   };
 
   const discoverMovies = async (pageParam = 1) => {
-    if (isLoading) return;
-    if (requestedDiscoverPagesRef.current.has(pageParam)) return;
+    if (isLoading || requestedDiscoverPagesRef.current.has(pageParam) || favoritesOnly)
+      return;
+
     try {
-      if (favoritesOnly) return;
       requestedDiscoverPagesRef.current.add(pageParam);
       setIsLoading(true);
+
       const res = await api.get(`movies/discover`, {
-        params: { page: pageParam },
+        params: {
+          page: pageParam,
+        lang: i18n.language
+        }
       });
       const { results, page: currentPage, total_pages } = res.data;
       const nextResults = Array.isArray(results) ? results : [];
@@ -216,6 +202,14 @@ export default function MovieTest() {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    requestedDiscoverPagesRef.current.clear();
+    setMovies([]);
+    setPage(1);
+    discoverMovies(1);
+    
+  }, [i18n.language]);
 
   const fetchFavoriteMovieCards = async () => {
     if (!isAuthenticated) return;
