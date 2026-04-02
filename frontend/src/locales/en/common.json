@@ -114,6 +114,7 @@
     "comments": {
       "title": "Comments",
       "addComment": "Add a comment",
+      "NoComments": "No comments yet.",
       "editComment": "Edit comment",
       "submit": "Submit",
       "enterToSave": "Enter to save",
@@ -131,5 +132,18 @@
       "deleteCommentError": "Failed to delete comment",
       "editCommentSuccess": "Comment edited successfully",
       "editCommentError": "Failed to edit comment"
+    },
+    "moviePage": {
+    "torrentNotFound": "Sorry, no sources were found for this movie.",
+    "torrentSelection": "Select a torrent to start the movie...",
+        "loading": "Chargement...",
+    "statusLabel": {
+      "options": "Options",
+      "peersConnected": "peers connected",
+      "readyToWatch": "Ready to stream",
+      "searching": "Searching for peers...",
+      "buffering": "Buffering...",
+      "idle": "Idle"
     }
+}
 }

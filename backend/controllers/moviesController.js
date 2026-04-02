@@ -9,26 +9,6 @@ import { filterMoviesWithTorrents } from "../services/torrentAvailability.js";
 
 const CAM_REGEX = /\b(CAM|TS|TELESYNC|TC|SCREENER|SCR|HDCAM)\b/i;
 
-const GENRES_MAP = {
-  28: "Action",
-  12: "Aventure",
-  16: "Animation",
-  35: "Comédie",
-  80: "Crime",
-  99: "Documentaire",
-  18: "Drame",
-  10751: "Familial",
-  14: "Fantastique",
-  36: "Histoire",
-  27: "Horreur",
-  10402: "Musique",
-  9648: "Mystère",
-  10749: "Romance",
-  878: "Science-Fiction",
-  53: "Thriller",
-  10752: "Guerre",
-};
-
 const BEST_TRACKERS = [
   "udp://tracker.opentrackr.org:1337/announce",
   "udp://tracker.leechers-paradise.org:6969/announce",
@@ -37,8 +17,13 @@ const BEST_TRACKERS = [
   "udp://movies.zsw.ca:6969/announce",
   "udp://tracker.cyberia.is:6969/announce",
 ]
-  .map((t) => `&tr=${encodeURIComponent(t)}`)
-  .join("");
+.map((t) => `&tr=${encodeURIComponent(t)}`)
+.join("");
+
+const getTmdbLang = (req) => {
+  const lang = req.body.lang || req.query.lang;
+  return lang === 'en' ? 'en-US' : 'fr-FR';
+};
 
 const calculateScore = (t) => {
   let score = 0;
@@ -75,9 +60,10 @@ const calculateScore = (t) => {
 
 const moviesController = {
   discover: async (req, res) => {
+    const lang = getTmdbLang(req)
     const page = Number(req.query.page) || 1;
     try {
-      const tmdbUrl = `https://api.themoviedb.org/3/discover/movie?api_key=${process.env.TMDB_API_KEY}&language=fr-FR&sort_by=popularity.desc&page=${page}`;
+      const tmdbUrl = `https://api.themoviedb.org/3/discover/movie?api_key=${process.env.TMDB_API_KEY}&language=${lang}&sort_by=popularity.desc&page=${page}`;
       const tmdbRes = await fetch(tmdbUrl);
       const tmdbData = await tmdbRes.json();
       const results = await filterMoviesWithTorrents(tmdbData.results || []);
@@ -92,6 +78,8 @@ const moviesController = {
     }
   },
   getPosters: async (req, res) => {
+    const lang = getTmdbLang(req)
+
     try {
       const apiKey = process.env.TMDB_API_KEY;
       if (!apiKey || apiKey.trim() === "") {
@@ -101,7 +89,7 @@ const moviesController = {
       const pages = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
       const fetchPage = (page) =>
         fetch(
-          `https://api.themoviedb.org/3/movie/popular?api_key=${apiKey}&language=fr-FR&page=${page}`,
+          `https://api.themoviedb.org/3/movie/popular?api_key=${apiKey}&language=${lang}&page=${page}`,
         ).then((r) => r.json());
       const allData = await Promise.all(pages.map(fetchPage));
       const results = allData.flatMap((data) =>
@@ -126,17 +114,17 @@ const moviesController = {
     }
   },
   search: async (req, res) => {
+    const lang = getTmdbLang(req)
+
     const { q } = req.query;
     if (!q) return res.status(400).json({ error: "Recherche vide" });
 
     try {
-      // 1. Trouver le film précis sur TMDB pour avoir l'ID IMDb et l'affiche
-      const tmdbUrl = `https://api.themoviedb.org/3/search/movie?api_key=${process.env.TMDB_API_KEY}&query=${encodeURIComponent(q)}&language=fr-FR`;
+      const tmdbUrl = `https://api.themoviedb.org/3/search/movie?api_key=${process.env.TMDB_API_KEY}&query=${encodeURIComponent(q)}&language=${lang}`;
 
       const tmdbRes = await fetch(tmdbUrl);
       const tmdbData = await tmdbRes.json();
 
-      // Vérification cruciale : est-ce qu'on a au moins un résultat ?
       if (!tmdbData.results || tmdbData.results.length === 0) {
         return res.status(404).json({ error: "Aucun film trouvé sur TMDB" });
       }
@@ -150,11 +138,15 @@ const moviesController = {
   },
   select: async (req, res) => {
     const { selectMovieid } = req.body;
-    if (!selectMovieid) return res.status(400).json({ error: "ID manquant" });
 
+    const lang = getTmdbLang(req);
+
+    if (!selectMovieid)
+      return res.status(400).json({ error: "ID manquant" });
+    
     try {
       const movieRes = await fetch(
-        `https://api.themoviedb.org/3/movie/${selectMovieid}?api_key=${process.env.TMDB_API_KEY}&language=fr-FR`,
+        `https://api.themoviedb.org/3/movie/${selectMovieid}?api_key=${process.env.TMDB_API_KEY}&language=${lang}`,
       );
       const movieData = await movieRes.json();
 
@@ -166,7 +158,6 @@ const moviesController = {
       const rawResults = jackettData.Results || [];
       const filtered = rawResults.filter((t) => !CAM_REGEX.test(t.Title));
 
-      // 1. DEDUPLICATION LOOP
       const uniqueTorrents = new Map();
 
       filtered.forEach((t) => {
@@ -196,8 +187,6 @@ const moviesController = {
           hash: uniqueKey,
         };
 
-        // 🚀 IMPORTANT: Actually save it to the Map!
-        // If we see the same hash, we keep the one with more seeders
         if (
           !uniqueTorrents.has(uniqueKey) ||
           item.seeders > uniqueTorrents.get(uniqueKey).seeders
@@ -206,9 +195,8 @@ const moviesController = {
         }
       });
 
-      // 2. CATEGORIZATION LOOP (Outside the first loop!)
       const deduplicatedArray = Array.from(uniqueTorrents.values());
-      const tiers = { "4K": [], "1080p": [], "720p": [] }; // 🚀 Defined here, accessible below!
+      const tiers = { "4K": [], "1080p": [], "720p": [] };
 
       deduplicatedArray.forEach((item) => {
         const titleUpper = item.title.toUpperCase();
@@ -218,7 +206,6 @@ const moviesController = {
         else tiers["720p"].push(item);
       });
 
-      // 3. 3x3 Strategy
       const finalTorrents = [
         ...tiers["4K"].sort((a, b) => b.score - a.score).slice(0, 3),
         ...tiers["1080p"].sort((a, b) => b.score - a.score).slice(0, 3),

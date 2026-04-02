@@ -17,7 +17,10 @@ const getMovieYear = (movie) =>
 
 const buildTorrentSearchQueries = (movie) => {
   const year = getMovieYear(movie);
-  const titles = [movie?.original_title, movie?.title]
+  const titles = [
+    movie?.original_title, // This is usually the most reliable for seeds
+    movie?.title           // This is the translated version (FR or EN)
+  ]
     .map((title) => title?.trim?.())
     .filter(Boolean);
   const uniqueTitles = Array.from(new Set(titles));

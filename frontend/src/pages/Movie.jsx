@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import api from "../services/api";
 import Comment from "../components/Comment.jsx";
 import "./comment.css";
+import { useTranslation } from "react-i18next";
 
 const getCleanQuality = (title) => {
   if (!title) return { resolution: "SD", isHeavy: false };
@@ -17,6 +18,7 @@ const getCleanQuality = (title) => {
 };
 
 const HealthBadge = ({ health, peers, speed, status }) => {
+  const { t } = useTranslation();
   const colors = {
     excellent: "#4caf50",
     okay: "#ff9800",
@@ -25,10 +27,10 @@ const HealthBadge = ({ health, peers, speed, status }) => {
   };
 
   const statusLabel = {
-    searching: "Recherche de pairs...",
-    buffering: "Mise en mémoire tampon...",
-    streaming: "Prêt à visionner",
-    idle: "En attente",
+    searching: t("moviePage.statusLabel.searching"),
+    buffering: t("moviePage.statusLabel.buffering"),
+    streaming: t("moviePage.statusLabel.readyToWatch"),
+    idle: t("moviePage.statusLabel.idle"),
   };
 
   return (
@@ -58,7 +60,7 @@ const HealthBadge = ({ health, peers, speed, status }) => {
         </span>
       </div>
       <div style={{ fontSize: "0.9rem", color: "#aaa", marginTop: "5px" }}>
-        {peers || 0} pairs connectés •{" "}
+        {peers || 0} {t("moviePage.statusLabel.peersConnected")} •{" "}
         <span style={{ color: "#4caf50" }}>{speed || "0.00"} MB/s</span>
       </div>
     </div>
@@ -66,6 +68,7 @@ const HealthBadge = ({ health, peers, speed, status }) => {
 };
 
 const MoviePage = () => {
+  const { t, i18n } = useTranslation();
   const { id } = useParams();
   const [movieData, setMovieData] = useState(null);
   const [selectedTorrent, setSelectedTorrent] = useState(null);
@@ -163,7 +166,10 @@ const MoviePage = () => {
   useEffect(() => {
     const fetchRealData = async () => {
       try {
-        const res = await api.post("movies/select", { selectMovieid: id });
+        const res = await api.post("movies/select", { 
+        selectMovieid: id,
+        lang: i18n.language 
+      });
         setMovieData(res.data);
         setLoading(false);
       } catch (err) {
@@ -171,9 +177,9 @@ const MoviePage = () => {
       }
     };
     fetchRealData();
-  }, [id]);
+  }, [id, i18n.language]);
 
-  if (loading || !movieData) return <div className="loader">Chargement...</div>;
+  if (loading || !movieData) return <div className="loader">{t("moviePage.loading")}</div>;
 
   const currentHash = selectedTorrent ? getHash(selectedTorrent.magnet) : null;
   const videoUrl = selectedTorrent
@@ -235,7 +241,7 @@ const MoviePage = () => {
                         paddingLeft: "10px",
                       }}
                     >
-                      {res} Options
+                      {res} {t("moviePage.statusLabel.options")}
                     </h3>
                     <div
                       style={{
@@ -267,7 +273,7 @@ const MoviePage = () => {
                         >
                           <strong>{t.source}</strong>
                           <div style={{ fontSize: "0.75rem", opacity: 0.8 }}>
-                            {t.size} • {t.seeders} seeds
+                            {t.size}
                           </div>
                         </button>
                       ))}
@@ -305,10 +311,10 @@ const MoviePage = () => {
         ) : (
           <div style={{ textAlign: "center", padding: "20px" }}>
             {movieData.torrents && movieData.torrents.length > 0 ? (
-              <p>Sélectionnez un torrent pour lancer le film...</p>
+              <p>{t("moviePage.torrentSelection")}</p>
             ) : (
               <p style={{ color: "#f44336" }}>
-                Désolé, aucune source n'a été trouvée pour ce film.
+                {t("moviePage.torrentNotFound")}
               </p>
             )}
           </div>

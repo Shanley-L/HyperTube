@@ -114,6 +114,7 @@
   "comments": {
     "title": "Commentaires",
     "addComment": "Ajouter un commentaire",
+    "NoComments": "Aucun commentaire pour le moment.",
     "submit": "Envoyer",
     "instant": "A l'instant",
     "minutes": "minutes",
@@ -131,5 +132,18 @@
     "deleteCommentError": "Échec de la suppression du commentaire",
     "editCommentSuccess": "Commentaire modifié avec succès",
     "editCommentError": "Échec de la modification du commentaire"
+  },
+  "moviePage" : {
+    "torrentNotFound": "Désolé, aucune source n'a été trouvée pour ce film.",
+    "torrentSelection": "Sélectionnez un torrent pour lancer le film...",
+    "loading": "Chargement...",
+    "statusLabel" : {
+      "options": "Options",
+      "peersConnected": "pairs connectés",
+      "readyToWatch": "Prêt à visionner",
+      "searching": "Recherche de pairs...",
+      "buffering": "Mise en mémoire tampon...",
+      "idle": "En attente"
+    }
   }
 }
