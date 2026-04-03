@@ -21,7 +21,6 @@ function Comment({ movieId }) {
                 comment.profile_picture_url = '/avatar-silhouette.svg';
             }
         }
-        console.log(new Date(response.data[0].created_at).toString());
         setComments(response.data.reverse());
     } catch (error) {
         console.error("Failed to fetch comments", error);

@@ -21,6 +21,7 @@ const BEST_TRACKERS = [
 .join("");
 
 const getTmdbLang = (req) => {
+  console.log("req.body de getTdmkjsndfkjsdf: ", req.body);
   const lang = req.body.lang || req.query.lang;
   return lang === 'en' ? 'en-US' : 'fr-FR';
 };
@@ -151,6 +152,7 @@ const moviesController = {
       const movieData = await movieRes.json();
 
       const searchQuery = `${movieData.title} ${movieData.release_date?.split("-")[0]}`;
+      console.log("api key :", process.env.JACKETT_API_KEY);
       const jackettUrl = `http://localhost:9117/api/v2.0/indexers/all/results?apikey=${process.env.JACKETT_API_KEY}&Query=${encodeURIComponent(searchQuery)}`;
       const jackettRes = await fetch(jackettUrl);
       const jackettData = await jackettRes.json();
@@ -225,8 +227,8 @@ const moviesController = {
         torrents: finalTorrents,
       });
     } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: "Erreur lors de la sélection" });
+      console.error("erreur : ", error);
+      res.status(500).json({ error: "Erreur lors de la sélection :", error });
     }
   },
   watched: async (req, res) => {
