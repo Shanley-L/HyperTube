@@ -102,6 +102,27 @@ body {
   background: #555;
 }
 
+.get-users-btn {
+  padding: 12px 20px;
+  border: none;
+  background: rgb(245, 131, 0);
+  color: rgb(0, 0, 0);
+  cursor: pointer;
+  font-weight: bold;
+  transition: 0.2s;
+}
+.get-users-btn:hover {
+  background: rgba(245, 131, 0, 0.863);
+}
+.get-users-btn:disabled {
+  background: #555;
+  color: #bbb;
+  cursor: not-allowed;
+}
+.get-users-btn:disabled:hover {
+  background: #555;
+}
+
 .movie-card.watched .movie-poster {
   filter: grayscale(0.8) brightness(0.5);
   border: 2px solid rgba(245, 131, 0, 0.863); /* Optionnel : bordure rouge */

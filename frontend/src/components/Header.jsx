@@ -56,6 +56,17 @@ function Header() {
     </div>
   );
 
+  const showUsers = () => {
+    navigate('/users');
+    setDropdownOpen(false);
+  };
+
+  const communityButton = () => (
+    <button type="button" className="get-users-btn" onClick={() => showUsers()}>
+      <span>Community</span>
+    </button>
+  );
+
   return (
     <header>
       <h1><button
@@ -95,6 +106,7 @@ function Header() {
                   <div className="header-user-menu-dropdown-lang">
                     {langButtons('header-lang-row')}
                   </div>
+                  {communityButton()}
                 </div>
               )}
             </div>
