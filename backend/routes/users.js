@@ -4,6 +4,7 @@ import multer from 'multer';
 import authMiddleware from '../middlewares/auth.js';
 import { AVATARS_DIR } from '../config/uploads.js';
 import {
+  findAll,
   findById,
   findByUsername,
   findByEmail,
@@ -153,6 +154,17 @@ router.get('/:id', authMiddleware, async (req, res) => {
     res.json(toSafeUser(user));
   } catch (e) {
     res.status(500).json({ message: e.message || 'Failed to load user' });
+  }
+});
+
+router.get('/', authMiddleware, async (req, res) => {
+  try {
+    const { userId } = req.user || {};
+    if (!userId) return res.status(400).json({ message: 'Invalid token payload' });
+    const users = await findAll();
+    res.json(users.map(toSafeUser));
+  } catch (e) {
+    res.status(500).json({ message: e.message || 'Failed to load users' });
   }
 });
 
