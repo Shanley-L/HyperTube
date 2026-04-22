@@ -281,20 +281,26 @@ export default function MovieTest() {
   const isSearchDisabled = query.trim().length === 0;
 
   const handleSearch = async () => {
-    if (favoritesOnly) return;
-    if (!isAuthenticated) {
-      navigate("/login", { state: { from: "/movies" } });
-      return;
-    }
-    try {
-      const res = await api.get(`movies/search?q=${query}`);
-      setSortBy("title-asc");
-      setHasSearched(Boolean(query.trim()));
-      setMovies(dedupeMoviesById(res.data || []));
-    } catch (err) {
-      console.error(err);
-    }
-  };
+  if (favoritesOnly) return;
+  if (!isAuthenticated) {
+    navigate("/login", { state: { from: "/movies" } });
+    return;
+  }
+  try {
+    const res = await api.get(`movies/search?q=${query}`);
+    setSortBy("title-asc");
+    setHasSearched(Boolean(query.trim()));
+
+    const searchData = Array.isArray(res.data) 
+      ? res.data 
+      : (res.data?.results || []);
+
+    setMovies(dedupeMoviesById(searchData));
+  } catch (err) {
+    console.error(err);
+    setMovies([]);
+  }
+};
 
   const toggleFavorite = async (e, movieId) => {
     e.preventDefault();
@@ -505,11 +511,14 @@ export default function MovieTest() {
                   </button>
                 )}
                 <img
-                  src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`}
-                  className="movie-poster"
-                  alt=""
-                  onClick={() => handleMovieClick(movie.id)}
-                />
+                src={movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : "/placeholder.png"}
+                className="movie-poster"
+                alt=""
+                onError={(e) => {
+                  e.target.src = "https://dummyimage.com/100/fff/0011ff.png&text=Image+Not+Found";
+                }}
+                onClick={() => handleMovieClick(movie.id)}
+              />
                 {isWatched && (
                   <span className="watched-badge">✔ {t("movies.watched")}</span>
                 )}
