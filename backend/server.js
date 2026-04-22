@@ -72,6 +72,11 @@ app.get(ApiRoutes.DBHealth, async (req, res) => {
     });
   }
 });
+app.use('/subtitles', (req, res, next) => {
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'GET');
+    next();
+}, express.static(path.resolve('./subtitles')));
 
 app.use(ApiRoutes.Auth, authRoutes);
 app.use("/api/users", userRoutes);

@@ -4,6 +4,19 @@ import path from 'path';
 
 const API_KEY = 'pFQLpEQy7aEHdKn4ZWkmxlrFWpH7pbCR';
 
+/**
+ * Converts SRT format to WebVTT format
+ * 1. Adds WEBVTT header
+ * 2. Replaces time commas (00:00:00,000) with dots (00:00:00.000)
+ */
+const convertSrtToVtt = (srtData) => {
+    if (!srtData) return "";
+    // Check if it's already VTT
+    if (srtData.startsWith("WEBVTT")) return srtData;
+
+    return "WEBVTT\n\n" + srtData.replace(/(\d{2}:\d{2}:\d{2}),(\d{3})/g, '$1.$2');
+};
+
 export const fetchAndSaveSubtitles = async (imdbId, tmdbId, languages = ['en', 'fr']) => {
   if (!imdbId || imdbId === 'undefined' || !tmdbId || tmdbId === 'undefined') {
     console.error("Subtitle Service: Missing IDs", { imdbId, tmdbId });
@@ -23,7 +36,7 @@ export const fetchAndSaveSubtitles = async (imdbId, tmdbId, languages = ['en', '
       },
       headers: {
         'Api-Key': API_KEY,
-        'User-Agent': 'Hypertube_App_v1'
+        'User-Agent': 'Hypertubesub v1.0.0'
       }
     });
 
@@ -33,8 +46,8 @@ export const fetchAndSaveSubtitles = async (imdbId, tmdbId, languages = ['en', '
     const savedSubs = [];
 
     for (const lang of languages) {
-      const sub = results.find(s => s.attributes.language === lang);
-      
+      const sub = results.find(s => s.attributes.language.toLowerCase() === lang.toLowerCase());
+
       if (sub && sub.attributes.files && sub.attributes.files.length > 0) {
         const fileId = sub.attributes.files[0].file_id;
 
@@ -54,8 +67,10 @@ export const fetchAndSaveSubtitles = async (imdbId, tmdbId, languages = ['en', '
           const fileName = `${tmdbId}-${lang}.vtt`;
           const fullPath = path.join(subFolder, fileName);
 
-          const fileResponse = await axios.get(downloadRes.data.link, { responseType: 'arraybuffer' });
-          fs.writeFileSync(fullPath, fileResponse.data);
+          const fileResponse = await axios.get(downloadRes.data.link, { responseType: 'text' });
+          const vttContent = convertSrtToVtt(fileResponse.data);
+
+          fs.writeFileSync(fullPath, vttContent, 'utf-8');
           
           savedSubs.push({ lang, filePath: fileName });
         }

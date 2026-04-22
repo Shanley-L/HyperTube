@@ -39,15 +39,15 @@ clean:
 	@echo "🧹 Cleaning containers..."
 	@$(DOCKER_COMPOSE) stop $(QUIET)
 	@$(DOCKER_COMPOSE) down $(QUIET)
-	@rm -rf ./backend/downloads/*
 	@echo "✅ Containers stopped and removed."
 
-fclean:
+fclean: clean
 	@echo "🗑️  Deep cleaning..."
 	@$(DOCKER_COMPOSE) down -v --rmi all $(QUIET)
 	@rm -rf frontend/node_modules backend/node_modules
 	@rm -f frontend/package-lock.json backend/package-lock.json
 	@rm -rf ./backend/downloads/*
+	@rm -rf ./backend/subtitles/*
 	@echo "✨ Everything has been deleted."
 
 re-dev: fclean dev

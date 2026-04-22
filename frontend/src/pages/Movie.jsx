@@ -246,16 +246,22 @@ const MoviePage = () => {
             >
               <source src={videoUrl} type="video/mp4" />
               
-              {subtitles.map((sub, index) => (
+              {subtitles && subtitles.length > 0 && subtitles.map((sub, i) => {
+              const isEnglish = sub.language?.toLowerCase() === 'en';
+              
+              const label = isEnglish ? 'English' : 'French';
+
+              return (
                 <track 
-                  key={index}
-                  label={sub.language === 'en' ? 'English' : 'Français'}
+                  key={`${sub.file_path}-${i}`} // Use file_path (snake_case)
+                  label={label}
                   kind="subtitles"
-                  srcLang={sub.language}
-                  src={`http://localhost:3000/subtitles/${sub.file_path}`}
-                  default={sub.language === i18n.language} 
+                  srcLang={sub.language} // Use language
+                  src={`http://localhost:3000/subtitles/${sub.file_path}`} // Use file_path
+                  default={sub.language === i18n.language}
                 />
-              ))}
+              );
+            })}
             </video>
           </div>
         ) : (
