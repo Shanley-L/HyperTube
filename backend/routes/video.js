@@ -100,6 +100,11 @@ router.get(ApiRoutes.Stream, async (req, res) => {
   const jackettUrl = req.query.url;
   const movieDuration = req.query.duration;
 
+  console.log("req.query : ", req.query);
+  console.log("req.params : ", req.params);
+
+
+
   res.setHeader("Access-Control-Allow-Origin", "http://localhost:5173");
   res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
 

@@ -21,7 +21,6 @@ const BEST_TRACKERS = [
 .join("");
 
 const getTmdbLang = (req) => {
-  console.log("req.body de getTdmkjsndfkjsdf: ", req.body);
   const lang = req.body.lang || req.query.lang;
   return lang === 'en' ? 'en-US' : 'fr-FR';
 };
@@ -130,8 +129,7 @@ const moviesController = {
         return res.status(404).json({ error: "Aucun film trouvé sur TMDB" });
       }
 
-      const results = await filterMoviesWithTorrents(tmdbData.results);
-      return res.status(200).json(results);
+      return res.status(200).json(tmdbData);
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: "Erreur de recherche combinée" });
@@ -152,7 +150,6 @@ const moviesController = {
       const movieData = await movieRes.json();
 
       const searchQuery = `${movieData.title} ${movieData.release_date?.split("-")[0]}`;
-      console.log("api key :", process.env.JACKETT_API_KEY);
       const jackettUrl = `http://localhost:9117/api/v2.0/indexers/all/results?apikey=${process.env.JACKETT_API_KEY}&Query=${encodeURIComponent(searchQuery)}`;
       const jackettRes = await fetch(jackettUrl);
       const jackettData = await jackettRes.json();

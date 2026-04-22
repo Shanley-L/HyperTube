@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import api from "../services/api";
 import Comment from "../components/Comment.jsx";
@@ -225,7 +225,7 @@ const MoviePage = () => {
             {info.title} ({info.year})
           </h1>
           <p style={{ color: "#f5c518", fontSize: "1.5rem" }}>
-            ★ {info.rating}
+            ★ {info.rating} • {info.runtime} mins
           </p>
           <p style={{ lineHeight: "1.6", paddingTop: "20px" }}>
             {info.overview}
