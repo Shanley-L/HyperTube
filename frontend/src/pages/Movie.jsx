@@ -73,6 +73,7 @@ const MoviePage = () => {
   const [movieData, setMovieData] = useState(null);
   const [selectedTorrent, setSelectedTorrent] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [subtitles, setSubtitles] = useState([]);
   const [torrentStatus, setTorrentStatus] = useState({
     health: "loading",
     peers: 0,
@@ -86,58 +87,40 @@ const MoviePage = () => {
     return match ? match[1].toLowerCase() : "loading";
   };
 
-  // 🚀 CALCULATION: Define this in the main body so it's accessible to videoUrl
   const info = movieData?.info || {};
   const durationInSeconds = info.runtime ? info.runtime * 60 : 0;
 
+  // 🎬 Initial Data Fetch (Movie Info)
   useEffect(() => {
-    if (!selectedTorrent) return;
-
-    setTorrentStatus({
-      health: "loading",
-      peers: 0,
-      speed: "0",
-      status: "searching",
-    });
-    const hash = getHash(selectedTorrent.magnet);
-
-    // We change this to a setInterval so it updates every 2 seconds while buffering
-    const interval = setInterval(async () => {
+    const fetchRealData = async () => {
       try {
-        const res = await api.get(`/video/status/${hash}`);
-        setTorrentStatus(res.data);
-
-        // If we are finished buffering, we could stop polling as frequently,
-        // but for now, let's keep it simple.
-        if (res.data.status === "streaming") {
-          // Option: clearInterval(interval) if you want to stop updating once it starts
-        }
-      } catch (e) {
-        console.error("Status check failed");
+        const res = await api.post("movies/select", { 
+          selectMovieid: id,
+          lang: i18n.language 
+        });
+        setMovieData(res.data);
+        setLoading(false);
+      } catch (err) {
+        setLoading(false);
       }
-    }, 2000);
+    };
+    fetchRealData();
+  }, [id, i18n.language]);
 
-    return () => clearInterval(interval);
-  }, [selectedTorrent]);
-
-  // 🛰️ Media Session Effect: Tells the browser UI the total length
   useEffect(() => {
-    if (durationInSeconds > 0 && "mediaSession" in navigator) {
-      navigator.mediaSession.metadata = new MediaMetadata({
-        title: info.title,
-        artist: "Hypertube",
-        artwork: [{ src: info.poster, sizes: "512x512", type: "image/png" }],
-      });
+    if (!movieData?.info?.tmdb_id) return;
 
-      navigator.mediaSession.setPositionState({
-        duration: durationInSeconds,
-        playbackRate: 1,
-        position: 0,
-      });
-    }
-  }, [movieData, durationInSeconds]);
+    const fetchSubtitles = async () => {
+      try {
+        const res = await api.get(`/video/subtitles/${movieData.info.tmdb_id}`);
+        setSubtitles(res.data);
+      } catch (err) {
+        console.error("Failed to load subtitles");
+      }
+    };
+    fetchSubtitles();
+  }, [movieData]);
 
-  // 📡 Torrent Health Check Effect
   useEffect(() => {
     if (!selectedTorrent) return;
 
@@ -162,28 +145,23 @@ const MoviePage = () => {
     return () => clearInterval(interval);
   }, [selectedTorrent]);
 
-  // 🎬 Initial Data Fetch
+  // 🛰️ Media Session Effect
   useEffect(() => {
-    const fetchRealData = async () => {
-      try {
-        const res = await api.post("movies/select", { 
-        selectMovieid: id,
-        lang: i18n.language 
+    if (durationInSeconds > 0 && "mediaSession" in navigator) {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: info.title,
+        artist: "Hypertube",
+        artwork: [{ src: info.poster, sizes: "512x512", type: "image/png" }],
       });
-        setMovieData(res.data);
-        setLoading(false);
-      } catch (err) {
-        setLoading(false);
-      }
-    };
-    fetchRealData();
-  }, [id, i18n.language]);
+    }
+  }, [movieData, durationInSeconds]);
 
   if (loading || !movieData) return <div className="loader">{t("moviePage.loading")}</div>;
 
   const currentHash = selectedTorrent ? getHash(selectedTorrent.magnet) : null;
+  
   const videoUrl = selectedTorrent
-    ? `http://localhost:3000/api/video/stream/${currentHash}?url=${encodeURIComponent(selectedTorrent.magnet)}&duration=${durationInSeconds}`
+    ? `http://localhost:3000/api/video/stream/${currentHash}?url=${encodeURIComponent(selectedTorrent.magnet)}&duration=${durationInSeconds}&tmdbId=${movieData.info.tmdb_id}&imdbId=${movieData.info.imdb_id}`
     : null;
 
   const qualityOrder = ["4K", "1080p", "720p", "SD"];
@@ -205,82 +183,43 @@ const MoviePage = () => {
         padding: "40px",
       }}
     >
-      <div
-        style={{
-          display: "flex",
-          gap: "40px",
-          maxWidth: "1200px",
-          margin: "0 auto",
-        }}
-      >
+      <div style={{ display: "flex", gap: "40px", maxWidth: "1200px", margin: "0 auto" }}>
         <div style={{ flex: "1" }}>
-          <img
-            src={info.poster}
-            alt={info.title}
-            style={{ width: "100%", borderRadius: "8px" }}
-          />
+          <img src={info.poster} alt={info.title} style={{ width: "100%", borderRadius: "8px" }} />
         </div>
         <div style={{ flex: "2" }}>
-          <h1>
-            {info.title} ({info.year})
-          </h1>
-          <p style={{ color: "#f5c518", fontSize: "1.5rem" }}>
-            ★ {info.rating} • {info.runtime} mins
-          </p>
-          <p style={{ lineHeight: "1.6", paddingTop: "20px" }}>
-            {info.overview}
-          </p>
+          <h1>{info.title} ({info.year})</h1>
+          <p style={{ color: "#f5c518", fontSize: "1.5rem" }}>★ {info.rating} • {info.runtime} mins</p>
+          <p style={{ lineHeight: "1.6", paddingTop: "20px" }}>{info.overview}</p>
+          
           <div style={{ marginTop: "30px" }}>
-            {qualityOrder.map(
-              (res) =>
-                groupedByQuality[res] && (
-                  <div key={res} style={{ marginBottom: "20px" }}>
-                    <h3
+            {qualityOrder.map((res) => groupedByQuality[res] && (
+              <div key={res} style={{ marginBottom: "20px" }}>
+                <h3 style={{ borderLeft: "4px solid #e50914", paddingLeft: "10px" }}>
+                  {res} {t("moviePage.statusLabel.options")}
+                </h3>
+                <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", marginTop: "10px" }}>
+                  {groupedByQuality[res].map((t, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setSelectedTorrent(t)}
                       style={{
-                        borderLeft: "4px solid #e50914",
-                        paddingLeft: "10px",
+                        padding: "10px 15px",
+                        backgroundColor: selectedTorrent?.magnet === t.magnet ? "#e50914" : "#222",
+                        border: selectedTorrent?.magnet === t.magnet ? "2px solid white" : "1px solid #444",
+                        color: "white",
+                        borderRadius: "6px",
+                        cursor: "pointer",
+                        textAlign: "left",
                       }}
                     >
-                      {res} {t("moviePage.statusLabel.options")}
-                    </h3>
-                    <div
-                      style={{
-                        display: "flex",
-                        gap: "10px",
-                        flexWrap: "wrap",
-                        marginTop: "10px",
-                      }}
-                    >
-                      {groupedByQuality[res].map((t, i) => (
-                        <button
-                          key={i}
-                          onClick={() => setSelectedTorrent(t)}
-                          style={{
-                            padding: "10px 15px",
-                            backgroundColor:
-                              selectedTorrent?.magnet === t.magnet
-                                ? "#e50914"
-                                : "#222",
-                            border:
-                              selectedTorrent?.magnet === t.magnet
-                                ? "2px solid white"
-                                : "1px solid #444",
-                            color: "white",
-                            borderRadius: "6px",
-                            cursor: "pointer",
-                            textAlign: "left",
-                          }}
-                        >
-                          <strong>{t.source}</strong>
-                          <div style={{ fontSize: "0.75rem", opacity: 0.8 }}>
-                            {t.size}
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                ),
-            )}
+                      <strong>{t.source}</strong>
+                      <div style={{ fontSize: "0.75rem", opacity: 0.8 }}>{t.size}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -302,10 +241,21 @@ const MoviePage = () => {
               controls
               width="100%"
               autoPlay
-              crossOrigin="anonymous"
+              crossOrigin="anonymous" 
               style={{ borderRadius: "8px" }}
             >
               <source src={videoUrl} type="video/mp4" />
+              
+              {subtitles.map((sub, index) => (
+                <track 
+                  key={index}
+                  label={sub.language === 'en' ? 'English' : 'Français'}
+                  kind="subtitles"
+                  srcLang={sub.language}
+                  src={`http://localhost:3000/subtitles/${sub.file_path}`}
+                  default={sub.language === i18n.language} 
+                />
+              ))}
             </video>
           </div>
         ) : (
@@ -313,9 +263,7 @@ const MoviePage = () => {
             {movieData.torrents && movieData.torrents.length > 0 ? (
               <p>{t("moviePage.torrentSelection")}</p>
             ) : (
-              <p style={{ color: "#f44336" }}>
-                {t("moviePage.torrentNotFound")}
-              </p>
+              <p style={{ color: "#f44336" }}>{t("moviePage.torrentNotFound")}</p>
             )}
           </div>
         )}

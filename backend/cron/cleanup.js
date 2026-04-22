@@ -6,8 +6,6 @@ import pool from '../config/database.js';
 
 // Run once a day
 cron.schedule('* * * * *', async () => {
-    console.log('Running daily disk cleanup...');
-    
     const ONE_MONTH_AGO = new Date();
     ONE_MONTH_AGO.setMonth(ONE_MONTH_AGO.getMonth() - 1);
 

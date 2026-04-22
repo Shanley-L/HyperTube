@@ -75,9 +75,9 @@ app.get(ApiRoutes.DBHealth, async (req, res) => {
 
 app.use(ApiRoutes.Auth, authRoutes);
 app.use("/api/users", userRoutes);
-
 app.use('/api/movies', moviesRoutes);
 app.use('/api/comments', commentsRoutes);
+app.use('/subtitles', express.static(path.resolve('./subtitles')));
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

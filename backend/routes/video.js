@@ -3,7 +3,10 @@ import torrentStream from "torrent-stream";
 import ffmpeg from "fluent-ffmpeg";
 import ffmpegInstaller from "@ffmpeg-installer/ffmpeg";
 import axios from "axios";
+import path from "path"; // Added for path logic
+import pool from "../config/database.js"; // Import your DB pool
 import { ApiRoutes } from "../config/resourceNames.js";
+import { fetchAndSaveSubtitles } from "../services/subtitleService.js"; // Import your new service
 
 const router = express.Router();
 const activeEngines = {};
@@ -24,6 +27,22 @@ async function resolveMagnet(input) {
   }
 }
 
+router.get("/subtitles/:tmdbId", async (req, res) => {
+  const { tmdbId } = req.params;
+
+  try {
+    const subs = await pool.query(
+      "SELECT language, file_path FROM subtitles WHERE movie_id = $1",
+      [tmdbId]
+    );
+
+    res.json(subs.rows);
+  } catch (err) {
+    console.error("Error fetching subtitles from DB:", err);
+    res.status(500).json({ error: "Could not fetch subtitles" });
+  }
+});
+
 router.get("/status/:id", (req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "http://localhost:5173");
   res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
@@ -43,7 +62,6 @@ router.get("/status/:id", (req, res) => {
 
   const speedBytes = engine.swarm.downloadSpeed();
   const speedMB = (speedBytes / (1024 * 1024)).toFixed(2);
-
   const activePeers = engine.swarm.wires.length;
   const downloadedMB = (engine.swarm.downloaded / (1024 * 1024)).toFixed(2);
 
@@ -52,8 +70,7 @@ router.get("/status/:id", (req, res) => {
   else if (activePeers > 0) health = "okay";
 
   res.json({
-    status:
-      engine.swarm.downloaded > 5 * 1024 * 1024 ? "streaming" : "buffering",
+    status: engine.swarm.downloaded > 5 * 1024 * 1024 ? "streaming" : "buffering",
     peers: activePeers,
     health: health,
     speed: speedMB,
@@ -99,11 +116,8 @@ router.get(ApiRoutes.Stream, async (req, res) => {
   const magnetId = req.params.id;
   const jackettUrl = req.query.url;
   const movieDuration = req.query.duration;
-
-  console.log("req.query : ", req.query);
-  console.log("req.params : ", req.params);
-
-
+  const tmdbId = req.query.tmdbId;
+  const imdbId = req.query.imdbId;
 
   res.setHeader("Access-Control-Allow-Origin", "http://localhost:5173");
   res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
@@ -116,7 +130,9 @@ router.get(ApiRoutes.Stream, async (req, res) => {
 
   if (!magnetLink) return res.status(400).send("Source introuvable");
 
-  const magnetHash = magnetLink.match(/btih:([a-zA-Z0-9]+)/)[1].toLowerCase();
+  const magnetHashMatch = magnetLink.match(/btih:([a-zA-Z0-9]+)/);
+  if (!magnetHashMatch) return res.status(400).send("Magnet invalide");
+  const magnetHash = magnetHashMatch[1].toLowerCase();
 
   if (!activeEngines[magnetHash]) {
     activeEngines[magnetHash] = torrentStream(magnetLink, {
@@ -133,7 +149,8 @@ router.get(ApiRoutes.Stream, async (req, res) => {
 
   const engine = activeEngines[magnetHash];
 
-  const startStreaming = () => {
+  console.log(`tmdbId: ${tmdbId}, imdbId: ${imdbId}`);
+  const startStreaming = async () => {
     if (res.headersSent) return;
 
     if (!engine.files || engine.files.length === 0) {
@@ -146,6 +163,33 @@ router.get(ApiRoutes.Stream, async (req, res) => {
     );
 
     file.select();
+
+    if (tmdbId) {
+      try {
+        // 1. Update/Insert movie path for cleanup
+        const relativePath = path.join(engine.torrent.name, file.path);
+        await pool.query(
+          `INSERT INTO movies (tmdb_id, title, file_path, last_watched_at)
+           VALUES ($1, $2, $3, NOW())
+           ON CONFLICT (tmdb_id) DO UPDATE SET file_path = EXCLUDED.file_path, last_watched_at = NOW()`,
+          [tmdbId, file.name, relativePath]
+        );
+
+        if (imdbId) {
+          console.log("Calling Subtitle Service with:", { imdbId, tmdbId });
+          const subs = await fetchAndSaveSubtitles(imdbId, tmdbId, ['en', 'fr']);
+          for (const sub of subs) {
+            await pool.query(
+              "INSERT INTO subtitles (movie_id, language, file_path) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING",
+              [tmdbId, sub.lang, sub.filePath]
+            );
+          }
+        }
+      } catch (err) {
+        console.error("Error updating movie/subs metadata:", err);
+      }
+    }
+    // ---------------------------
 
     if (file.name.endsWith(".mp4")) {
       return handleMp4Streaming(file, req, res);
@@ -184,12 +228,7 @@ router.get(ApiRoutes.Stream, async (req, res) => {
 
         command
           .on("error", (err) => {
-            if (
-              err.message.includes("Output pipe closed") ||
-              err.message.includes("SIGKILL")
-            ) {
-              return;
-            }
+            if (err.message.includes("Output pipe closed") || err.message.includes("SIGKILL")) return;
             console.error("FFmpeg Error:", err.message);
             if (!res.headersSent) res.end();
           })
@@ -200,12 +239,10 @@ router.get(ApiRoutes.Stream, async (req, res) => {
     res.on("close", () => clearInterval(checkBuffer));
   };
 
-  // If already ready, start. Otherwise wait for the event.
   if (engine.files && engine.files.length > 0) {
     startStreaming();
   } else {
     engine.once("ready", () => {
-      // Double check after the event
       if (engine.files && engine.files.length > 0) {
         startStreaming();
       } else {

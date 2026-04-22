@@ -220,6 +220,8 @@ const moviesController = {
           genres: movieData.genres.map((g) => g.name),
           overview: movieData.overview,
           runtime: movieData.runtime,
+          tmdb_id: movieData.id,
+          imdb_id: movieData.imdb_id
         },
         torrents: finalTorrents,
       });

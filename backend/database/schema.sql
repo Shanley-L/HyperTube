@@ -89,3 +89,6 @@ CREATE INDEX idx_user_movie_favorite_movie ON favorite_movies(movie_id);
 CREATE INDEX idx_comments_movie ON comments(movie_id);
 CREATE INDEX idx_comments_user ON comments(user_id);
 CREATE INDEX idx_movies_last_watched ON movies(last_watched_at);
+CREATE INDEX idx_subtitles_movie_id ON subtitles(movie_id);
+
+ALTER TABLE subtitles ADD CONSTRAINT unique_movie_lang UNIQUE (movie_id, language);
