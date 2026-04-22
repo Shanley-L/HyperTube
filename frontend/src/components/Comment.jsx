@@ -167,6 +167,7 @@ function Comment({ movieId }) {
 
             {hoveredUserId && authorInfo && (
                 <div className="author-tooltip-global" style={{ top: tooltipPos.y + 5, left: tooltipPos.x + 5 }}>
+                    <img className="comment-profile-picture" src={authorInfo.profile_picture_url} alt="" />
                     <p><strong>{authorInfo.username}</strong></p>
                     <p>{authorInfo.email}</p>
                 </div>

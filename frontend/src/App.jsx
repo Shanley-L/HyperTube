@@ -9,6 +9,9 @@ import MoviesPages from './pages/movies.jsx';
 import Header from './components/Header.jsx';
 import Footer from './components/Footer.jsx';
 import AuthCallBackPage from './pages/AuthCallBack.jsx';
+import UsersPage from './pages/users.jsx';
+import UserPage from './pages/user.jsx';
+
 function App() {
   return (
     <AuthProvider>
@@ -29,6 +32,8 @@ function App() {
               <Route path="/movies" element={<MoviesPages />} />
               {/* <Route path="/profile" element={<ProfilePage />} /> */}
               <Route path="/auth/callback" element={<AuthCallBackPage />} />
+              <Route path="/users" element={<UsersPage />} />
+              <Route path="/user/:id" element={<UserPage />} />
             </Routes>
             </div>
           </main>

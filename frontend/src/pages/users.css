@@ -1,0 +1,108 @@
+.users-page {
+  padding: 20px;
+  text-align: center;
+}
+
+.users-page h1 {
+  margin-bottom: 30px;
+  font-size: 2rem;
+}
+
+.users-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 20px;
+  max-width: 95%;
+  margin: 0 auto;
+  padding: 0;
+}
+
+.user-card {
+  list-style: none;
+  width: 180px;
+  background: #1e1e1e;
+  border-radius: 15px;
+  padding: 15px;
+  transition: background-color 0.2s ease;
+}
+
+.user-card:hover {
+  cursor: pointer;
+  background-color: #2a2a2a;
+}
+
+.not-found {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.not-found-404 {
+  font-size: 5rem;
+  font-weight: bold;
+  color: #fff;
+}
+
+.not-found-text {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #fff;
+}
+
+.user-avatar {
+  width: 120px;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 50%; /* Cercle pour les profils */
+  margin-bottom: 15px;
+  border: 3px solid #222;
+}
+
+.user-name {
+  font-weight: bold;
+  color: #fff;
+  font-size: 1.1rem;
+  word-break: break-all;
+}
+
+.user-profile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.user-profile .user-avatar {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  border: 3px solid #222;
+}
+
+.user-profile .user-name {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #fff;
+}
+
+.user-profile .search-btn {
+  background-color: #f58300;
+  color: #000000;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.2s ease;
+}
+
+.user-profile .search-btn:hover {
+  background-color: #e67300;
+}   
+
+.user-registered {
+  font-size: 0.9rem;
+  color: #999;
+}
