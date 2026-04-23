@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import './users.css';
 import api from "../services/api";
 import { useNavigate } from "react-router-dom";
+import { UserRoutes } from "../../../backend/config/resourceNames";
 
 export default function UsersPage() {
 
@@ -13,7 +14,7 @@ export default function UsersPage() {
     }, []);
 
     const fetchUsers = async () => {
-        const response = await api.get('/users');
+        const response = await api.get(UserRoutes.USERS);
         setUsers(response.data);
     };
 

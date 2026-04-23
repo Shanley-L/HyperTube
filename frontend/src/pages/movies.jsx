@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import "../pages/movies.css";
 import api from "../services/api";
 import { useAuth } from "../contexts/AuthContext";
+import { MoviesRoutes, UserRoutes } from "../../../backend/config/resourceNames";
 
 const GENRE_IDS = [
   28, 12, 16, 35, 80, 99, 18, 10751, 14, 36, 27, 10402, 9648, 10749, 878, 53,
@@ -142,8 +143,8 @@ export default function MovieTest() {
       return;
     }
     const [watchedRes, favoritesRes] = await Promise.all([
-      api.get("movies/getwatchedmovies"),
-      api.get("users/me/favorites"),
+      api.get(UserRoutes.WATCHED_MOVIES),
+      api.get(UserRoutes.FAVORITES),
     ]);
     const watchedIds = Array.isArray(watchedRes.data)
       ? watchedRes.data.map((id) => id?.toString?.()).filter(Boolean)
@@ -177,7 +178,7 @@ export default function MovieTest() {
       requestedDiscoverPagesRef.current.add(pageParam);
       setIsLoading(true);
 
-      const res = await api.get(`movies/discover`, {
+      const res = await api.get(MoviesRoutes.MOVIES + MoviesRoutes.MOVIES_DISCOVER, {
         params: {
           page: pageParam,
         lang: i18n.language

@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import api from '../services/api';
+import { UserRoutes } from '../../../backend/config/resourceNames';
 
 const AuthContext = createContext();
 
@@ -24,7 +25,7 @@ export const AuthProvider = ({ children }) => {
   const refreshProfile = useCallback(async (opts = {}) => {
     if (!token) return;
     try {
-      const { data } = await api.get('/users/me');
+      const { data } = await api.get(UserRoutes.ME);
       setUser((prev) => ({
         userId: data.id,
         username: data.username,

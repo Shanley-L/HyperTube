@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import api from '../services/api';
+import { ApiRoutes } from '../../../backend/config/resourceNames';
 
 const ROW_HEIGHT = 270;
 const COL_WIDTH = 180;
@@ -12,7 +13,7 @@ function PosterBackground({ children }) {
   useEffect(() => {
     const fetchPosters = async () => {
       try {
-        const res = await api.get('/movies/posters');
+        const res = await api.get(ApiRoutes.Posters);
         const list = Array.isArray(res.data) ? res.data : [];
         setPosters(list);
       } catch {

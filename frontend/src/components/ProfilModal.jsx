@@ -3,6 +3,7 @@ import { useAuth } from "../contexts/AuthContext";
 import api from "../services/api";
 import { useTranslation } from "react-i18next";
 import { avatarSrcWithBust } from "../utils/avatar";
+import { UserRoutes } from "../../../backend/config/resourceNames";
 
 function ProfileModal({ onClose, onSuccess }) {
   const { t } = useTranslation();
@@ -23,7 +24,7 @@ function ProfileModal({ onClose, onSuccess }) {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const res = await api.get("/users/me");
+        const res = await api.get(UserRoutes.ME);
         setFormData({
           username: res.data.username ?? "",
           first_name: res.data.first_name ?? "",

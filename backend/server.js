@@ -52,7 +52,7 @@ const limiter = rateLimit({
 });
 
 app.use(ApiRoutes.API, limiter);
-app.use('/uploads', express.static(UPLOADS_ROOT));
+app.use(ApiRoutes.Uploads, express.static(UPLOADS_ROOT));
 app.use(ApiRoutes.Video, videoRouter);
 app.use(ApiRoutes.Comments, commentRoutes);
 

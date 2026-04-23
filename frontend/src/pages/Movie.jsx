@@ -4,6 +4,7 @@ import api from "../services/api";
 import Comment from "../components/Comment.jsx";
 import "./comment.css";
 import { useTranslation } from "react-i18next";
+import { Video } from "../../../backend/config/resourceNames.js";
 
 const getCleanQuality = (title) => {
   if (!title) return { resolution: "SD", isHeavy: false };
@@ -97,7 +98,7 @@ const MoviePage = () => {
     let retries = 0;
     const interval = setInterval(async () => {
       try {
-        const subRes = await api.get(`/video/subtitles/${movieData.info.tmdb_id}`);
+        const subRes = await api.get(`${Video.SUBTITLES}/${movieData.info.tmdb_id}`);
         if (subRes.data.length > 0 || retries > 10) {
           clearInterval(interval);
           setSubtitles(subRes.data);
@@ -113,8 +114,7 @@ const MoviePage = () => {
   useEffect(() => {
     const loadEverything = async () => {
       try {
-        // 1. Fetch Movie Info
-        const res = await api.post("movies/select", { 
+        const res = await api.post(Video.SELECT, { 
           selectMovieid: id,
           lang: i18n.language 
         });
@@ -124,7 +124,7 @@ const MoviePage = () => {
 
         const tmdbId = res.data.info?.tmdb_id;
         if (tmdbId) {
-          const subRes = await api.get(`/video/subtitles/${tmdbId}`);
+          const subRes = await api.get(`${Video.SUBTITLES}/${tmdbId}`);
           setSubtitles(subRes.data);
         }
 
