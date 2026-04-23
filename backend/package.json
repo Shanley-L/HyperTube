@@ -34,7 +34,7 @@
     "morgan": "^1.10.0",
     "multer": "^2.0.2",
     "node-cron": "^4.2.1",
-    "nodemailer": "^7.0.12",
+    "nodemailer": "^8.0.5",
     "opensubtitles-api": "^5.1.2",
     "passport": "^0.6.0",
     "passport-42": "^1.0.0",
@@ -42,7 +42,7 @@
     "passport-google-oauth20": "^2.0.0",
     "passport-jwt": "^4.0.1",
     "pg": "^8.11.3",
-    "torrent-stream": "^1.2.1"
+    "torrent-stream": "^0.13.5"
   },
   "devDependencies": {
     "nodemon": "^3.0.2"

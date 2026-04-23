@@ -74,6 +74,7 @@ const MoviePage = () => {
   const [selectedTorrent, setSelectedTorrent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [subtitles, setSubtitles] = useState([]);
+  const [subsLoaded, setSubsLoaded] = useState(false);
   const [torrentStatus, setTorrentStatus] = useState({
     health: "loading",
     peers: 0,
@@ -92,7 +93,7 @@ const MoviePage = () => {
 
   // 🎬 Initial Data Fetch (Movie Info)
   useEffect(() => {
-    const fetchRealData = async () => {
+    const loadData = async () => {
       try {
         const res = await api.post("movies/select", { 
           selectMovieid: id,
@@ -100,26 +101,24 @@ const MoviePage = () => {
         });
         setMovieData(res.data);
         setLoading(false);
+
+        // 🚀 Fetch subtitles immediately using the result from the first call
+        const tmdbId = res.data.info?.tmdb_id;
+        if (tmdbId) {
+          console.log("Fetching subtitles for TMDB:", tmdbId);
+          const subRes = await api.get(`/video/subtitles/${tmdbId}`);
+          console.log("Subtitles received:", subRes.data);
+          setSubtitles(subRes.data);
+        }
       } catch (err) {
-        setLoading(false);
+        console.error("Error loading data:", err);
+      } finally {
+        setSubsLoaded(true); // 🚀 Mark as finished even if 0 subs found
       }
     };
-    fetchRealData();
+
+    loadData();
   }, [id, i18n.language]);
-
-  useEffect(() => {
-    if (!movieData?.info?.tmdb_id) return;
-
-    const fetchSubtitles = async () => {
-      try {
-        const res = await api.get(`/video/subtitles/${movieData.info.tmdb_id}`);
-        setSubtitles(res.data);
-      } catch (err) {
-        console.error("Failed to load subtitles");
-      }
-    };
-    fetchSubtitles();
-  }, [movieData]);
 
   useEffect(() => {
     if (!selectedTorrent) return;
@@ -145,7 +144,6 @@ const MoviePage = () => {
     return () => clearInterval(interval);
   }, [selectedTorrent]);
 
-  // 🛰️ Media Session Effect
   useEffect(() => {
     if (durationInSeconds > 0 && "mediaSession" in navigator) {
       navigator.mediaSession.metadata = new MediaMetadata({
@@ -224,56 +222,41 @@ const MoviePage = () => {
         </div>
       </div>
 
-      <div className="player-section" style={{ marginTop: "40px" }}>
-        {selectedTorrent && (
-          <HealthBadge
-            health={torrentStatus.health}
-            peers={torrentStatus.peers}
-            speed={torrentStatus.speed}
-            status={torrentStatus.status}
-          />
-        )}
-
-        {videoUrl ? (
+      <div className="player-section">
+        {videoUrl && subsLoaded ? (
           <div style={{ maxWidth: "1000px", margin: "0 auto" }}>
             <video
-              key={videoUrl}
+              // 🚀 CRITICAL: The key must change when subtitles arrive 
+              // AND when the torrent changes.
+              key={`${currentHash}-${subtitles.length}`}
               controls
               width="100%"
               autoPlay
               crossOrigin="anonymous" 
-              style={{ borderRadius: "8px" }}
             >
               <source src={videoUrl} type="video/mp4" />
               
-              {subtitles && subtitles.length > 0 && subtitles.map((sub, i) => {
-              const isEnglish = sub.language?.toLowerCase() === 'en';
+              {/* 🚀 Debug: If you see "TRACKS FOUND" in console, they should be in DOM */}
+              {subtitles.length > 0 && console.log("Rendering tracks in DOM:", subtitles)}
               
-              const label = isEnglish ? 'English' : 'French';
-
-              return (
+              {subtitles.map((sub, i) => (
                 <track 
-                  key={`${sub.file_path}-${i}`} // Use file_path (snake_case)
-                  label={label}
+                  key={`${sub.file_path}-${i}`}
+                  label={sub.language?.toLowerCase() === 'en' ? 'English' : 'French'}
                   kind="subtitles"
-                  srcLang={sub.language} // Use language
-                  src={`http://localhost:3000/subtitles/${sub.file_path}`} // Use file_path
+                  srcLang={sub.language}
+                  src={`http://localhost:3000/subtitles/${sub.file_path}`}
                   default={sub.language === i18n.language}
                 />
-              );
-            })}
+              ))}
             </video>
           </div>
+        ) : videoUrl ? (
+          <div className="loader">Waiting for subtitles...</div>
         ) : (
-          <div style={{ textAlign: "center", padding: "20px" }}>
-            {movieData.torrents && movieData.torrents.length > 0 ? (
-              <p>{t("moviePage.torrentSelection")}</p>
-            ) : (
-              <p style={{ color: "#f44336" }}>{t("moviePage.torrentNotFound")}</p>
-            )}
-          </div>
+          <p>Please select a torrent</p>
         )}
-        <Comment movieId={id}/>
+        <Comment movieId={movieData.info.tmdb_id} />
       </div>
     </div>
   );

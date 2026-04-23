@@ -149,7 +149,6 @@ router.get(ApiRoutes.Stream, async (req, res) => {
 
   const engine = activeEngines[magnetHash];
 
-  console.log(`tmdbId: ${tmdbId}, imdbId: ${imdbId}`);
   const startStreaming = async () => {
     if (res.headersSent) return;
 
