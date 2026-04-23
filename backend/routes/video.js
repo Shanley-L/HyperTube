@@ -3,10 +3,10 @@ import torrentStream from "torrent-stream";
 import ffmpeg from "fluent-ffmpeg";
 import ffmpegInstaller from "@ffmpeg-installer/ffmpeg";
 import axios from "axios";
-import path from "path"; // Added for path logic
-import pool from "../config/database.js"; // Import your DB pool
+import path from "path";
+import pool from "../config/database.js";
 import { ApiRoutes } from "../config/resourceNames.js";
-import { fetchAndSaveSubtitles } from "../services/subtitleService.js"; // Import your new service
+import { fetchAndSaveSubtitles } from "../services/subtitleService.js";
 
 const router = express.Router();
 const activeEngines = {};
@@ -83,7 +83,7 @@ function handleMp4Streaming(file, req, res) {
 
   const range = req.headers.range;
   res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
-  res.setHeader("Access-Control-Allow-Origin", "http://localhost:5173");
+  res.setHeader("Access-Control-Allow-Origin", process.env.FRONTEND_URL);
   res.setHeader("Accept-Ranges", "bytes");
 
   if (range) {
@@ -166,7 +166,6 @@ router.get(ApiRoutes.Stream, async (req, res) => {
 
     if (tmdbId) {
       try {
-        // 1. Update/Insert movie path for cleanup
         const relativePath = path.join(engine.torrent.name, file.path);
         await pool.query(
           `INSERT INTO movies (tmdb_id, title, file_path, last_watched_at)
@@ -176,12 +175,18 @@ router.get(ApiRoutes.Stream, async (req, res) => {
         );
 
         if (imdbId) {
-          console.log("Calling Subtitle Service with:", { imdbId, tmdbId });
-          const subs = await fetchAndSaveSubtitles(imdbId, tmdbId, ['en', 'fr']);
-          for (const sub of subs) {
+          const subtitles = await fetchAndSaveSubtitles(imdbId, tmdbId);
+
+          for (const sub of subtitles) {
             await pool.query(
-              "INSERT INTO subtitles (movie_id, language, file_path) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING",
-              [tmdbId, sub.lang, sub.filePath]
+              `INSERT INTO subtitles (movie_id, language, file_path) 
+              VALUES ($1, $2, $3) 
+              ON CONFLICT DO NOTHING`,
+              [
+                tmdbId, 
+                sub.language,
+                sub.file_path
+              ]
             );
           }
         }
@@ -189,7 +194,6 @@ router.get(ApiRoutes.Stream, async (req, res) => {
         console.error("Error updating movie/subs metadata:", err);
       }
     }
-    // ---------------------------
 
     if (file.name.endsWith(".mp4")) {
       return handleMp4Streaming(file, req, res);

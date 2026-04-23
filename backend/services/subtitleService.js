@@ -2,24 +2,24 @@ import axios from 'axios';
 import fs from 'fs';
 import path from 'path';
 
-const API_KEY = 'pFQLpEQy7aEHdKn4ZWkmxlrFWpH7pbCR';
+// 🚀 Pull from .env (make sure dotenv.config() is called in your main index.js/app.js)
+const API_KEY = process.env.OPENSUBTITLES_API_KEY;
 
-/**
- * Converts SRT format to WebVTT format
- * 1. Adds WEBVTT header
- * 2. Replaces time commas (00:00:00,000) with dots (00:00:00.000)
- */
 const convertSrtToVtt = (srtData) => {
     if (!srtData) return "";
-    // Check if it's already VTT
     if (srtData.startsWith("WEBVTT")) return srtData;
-
     return "WEBVTT\n\n" + srtData.replace(/(\d{2}:\d{2}:\d{2}),(\d{3})/g, '$1.$2');
 };
 
 export const fetchAndSaveSubtitles = async (imdbId, tmdbId, languages = ['en', 'fr']) => {
   if (!imdbId || imdbId === 'undefined' || !tmdbId || tmdbId === 'undefined') {
     console.error("Subtitle Service: Missing IDs", { imdbId, tmdbId });
+    return [];
+  }
+
+  // Safety check for the API key
+  if (!API_KEY) {
+    console.error("Subtitle Service: OPENSUBTITLES_API_KEY is missing in .env");
     return [];
   }
 
@@ -72,7 +72,11 @@ export const fetchAndSaveSubtitles = async (imdbId, tmdbId, languages = ['en', '
 
           fs.writeFileSync(fullPath, vttContent, 'utf-8');
           
-          savedSubs.push({ lang, filePath: fileName });
+          // 🚀 Match the keys your frontend is looking for: language and file_path
+          savedSubs.push({ 
+            language: lang, 
+            file_path: fileName 
+          });
         }
       }
     }
