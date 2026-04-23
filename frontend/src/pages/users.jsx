@@ -14,7 +14,6 @@ export default function UsersPage() {
 
     const fetchUsers = async () => {
         const response = await api.get('/users');
-        console.log("Users: ", response.data);
         setUsers(response.data);
     };
 

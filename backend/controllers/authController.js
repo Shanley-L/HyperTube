@@ -36,7 +36,6 @@ const AuthController = {
   },
   resetPassword: async (req, res)=> {
     const { newPassword, token } = req.body;
-    console.log("PASS : ", newPassword, "TOKEN :", token)
     const user = await findByResetToken(token);
     if (!user) return res.status(404).json({ message: 'Invalid or expired token' });
     if (user.reset_password_expires < new Date()) return res.status(400).json({ message: 'Token expired' });

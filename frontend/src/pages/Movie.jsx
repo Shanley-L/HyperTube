@@ -91,33 +91,50 @@ const MoviePage = () => {
   const info = movieData?.info || {};
   const durationInSeconds = info.runtime ? info.runtime * 60 : 0;
 
-  // 🎬 Initial Data Fetch (Movie Info)
   useEffect(() => {
-    const loadData = async () => {
+    if (!movieData?.info?.tmdb_id) return;
+    if (!selectedTorrent) return;
+    let retries = 0;
+    const interval = setInterval(async () => {
       try {
+        const subRes = await api.get(`/video/subtitles/${movieData.info.tmdb_id}`);
+        if (subRes.data.length > 0 || retries > 10) {
+          clearInterval(interval);
+          setSubtitles(subRes.data);
+        }
+        retries++;
+      } catch (err) {
+        console.error("Subtitle polling error:", err);
+      }
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [selectedTorrent]);
+
+  useEffect(() => {
+    const loadEverything = async () => {
+      try {
+        // 1. Fetch Movie Info
         const res = await api.post("movies/select", { 
           selectMovieid: id,
           lang: i18n.language 
         });
+        
         setMovieData(res.data);
         setLoading(false);
 
-        // 🚀 Fetch subtitles immediately using the result from the first call
         const tmdbId = res.data.info?.tmdb_id;
         if (tmdbId) {
-          console.log("Fetching subtitles for TMDB:", tmdbId);
           const subRes = await api.get(`/video/subtitles/${tmdbId}`);
-          console.log("Subtitles received:", subRes.data);
           setSubtitles(subRes.data);
         }
+
       } catch (err) {
         console.error("Error loading data:", err);
-      } finally {
-        setSubsLoaded(true); // 🚀 Mark as finished even if 0 subs found
+        setLoading(false);
       }
     };
 
-    loadData();
+    loadEverything();
   }, [id, i18n.language]);
 
   useEffect(() => {
@@ -222,22 +239,28 @@ const MoviePage = () => {
         </div>
       </div>
 
-      <div className="player-section">
-        {videoUrl && subsLoaded ? (
-          <div style={{ maxWidth: "1000px", margin: "0 auto" }}>
+      <div className="player-section" style={{ marginTop: "40px" }}>
+        {selectedTorrent && (
+          <HealthBadge
+            health={torrentStatus.health}
+            peers={torrentStatus.peers}
+            speed={torrentStatus.speed}
+            status={torrentStatus.status}
+          />
+        )}
+
+        {videoUrl ? (
+        <div style={{ maxWidth: "1000px", margin: "0 auto" }}>
+          {subtitles && (
             <video
-              // 🚀 CRITICAL: The key must change when subtitles arrive 
-              // AND when the torrent changes.
               key={`${currentHash}-${subtitles.length}`}
               controls
               width="100%"
               autoPlay
               crossOrigin="anonymous" 
+              style={{ borderRadius: "8px" }}
             >
               <source src={videoUrl} type="video/mp4" />
-              
-              {/* 🚀 Debug: If you see "TRACKS FOUND" in console, they should be in DOM */}
-              {subtitles.length > 0 && console.log("Rendering tracks in DOM:", subtitles)}
               
               {subtitles.map((sub, i) => (
                 <track 
@@ -250,13 +273,18 @@ const MoviePage = () => {
                 />
               ))}
             </video>
+          )}
+        </div>
+      ) : (
+          <div style={{ textAlign: "center", padding: "20px" }}>
+            {movieData.torrents && movieData.torrents.length > 0 ? (
+              <p>{t("moviePage.torrentSelection")}</p>
+            ) : (
+              <p style={{ color: "#f44336" }}>{t("moviePage.torrentNotFound")}</p>
+            )}
           </div>
-        ) : videoUrl ? (
-          <div className="loader">Waiting for subtitles...</div>
-        ) : (
-          <p>Please select a torrent</p>
-        )}
-        <Comment movieId={movieData.info.tmdb_id} />
+      )}
+      <Comment movieId={id}/>
       </div>
     </div>
   );

@@ -3,8 +3,6 @@ import fs from 'fs';
 import path from 'path';
 import pool from '../config/database.js';
 
-
-// Run once a day
 cron.schedule('* * * * *', async () => {
     const ONE_MONTH_AGO = new Date();
     ONE_MONTH_AGO.setMonth(ONE_MONTH_AGO.getMonth() - 1);
@@ -19,7 +17,6 @@ cron.schedule('* * * * *', async () => {
             
             if (fs.existsSync(filePath)) {
                 fs.rmSync(filePath, { recursive: true, force: true });
-                console.log(`Deleted old movie: ${movie.id}`);
             }
         });
     } catch (err) {
