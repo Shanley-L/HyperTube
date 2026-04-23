@@ -106,7 +106,7 @@ function Comment({ movieId }) {
                                     onClick={(e) => e.stopPropagation()}
                                 >
                                     <img className="comment-profile-picture" src={c.profile_picture_url} alt="" />
-                                    {c.user_name || 'Utilisateur'}
+                                    {c.username || 'Utilisateur'}
                                 </span>
                                 <span className="comment-date">
                                     {/* Date logic remains the same */}
