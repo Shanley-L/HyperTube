@@ -15,8 +15,6 @@ export default function UserPage() {
                 setUser(response.data);
             } catch (error) {
                 console.error("Erreur lors de la récup du user:", error);
-            } finally {
-                setLoading(false);
             }
         };
         fetchUserData();
