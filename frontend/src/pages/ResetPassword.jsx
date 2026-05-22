@@ -2,6 +2,7 @@ import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import api from "../services/api";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import "./ResetPassword.css";
 
 function ResetPasswordPage() {
   const { t } = useTranslation();
