@@ -4,6 +4,9 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import PosterBackground from "../components/PosterBackground";
+import googlePng from "../assets/google.png";
+import fortyTwoPng from "../assets/42.png";
+import githubLogo from "../assets/github-logo.webp";
 
 function LoginPage() {
   const { t } = useTranslation();
@@ -100,17 +103,17 @@ function LoginPage() {
           <div className="oauth-section">
             <a href="/api/auth/google">
               <button className="oauth-button" type="button">
-                <img src={"./src/assets/google.png"} alt={t('login.googleAlt')}/>
+                <img src={googlePng} alt={t('login.googleAlt')}/>
               </button>
             </a>
             <a href="/api/auth/42">
               <button className="oauth-button" type="button">
-                <img src={"./src/assets/42.png"} alt={t('login.fortyTwoAlt')} />
+                <img src={fortyTwoPng} alt={t('login.fortyTwoAlt')} />
               </button>
             </a>
             <a href="/api/auth/github">
               <button className="oauth-button" type="button">
-                <img src={"./src/assets/github-logo.webp"} alt={t('login.githubAlt')} />
+                <img src={githubLogo} alt={t('login.githubAlt')} />
               </button>
             </a>
           </div>

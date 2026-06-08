@@ -15,9 +15,6 @@ install:
 
 up: ## Start full Docker stack (db, jackett, backend, frontend)
 	@rm -rf ./backend/downloads/*
-	@echo "Ensuring lockfiles exist for Docker build..."
-	@if [ ! -f backend/package-lock.json ]; then cd backend && $(NPM) install; fi
-	@if [ ! -f frontend/package-lock.json ]; then cd frontend && $(NPM) install; fi
 	@$(DOCKER_COMPOSE) up -d --build
 	@echo "Stack ready: http://localhost:$${FRONTEND_PORT:-5173}"
 

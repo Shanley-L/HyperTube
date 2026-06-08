@@ -11,7 +11,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./backend/database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
     ports:
-      - "${DB_PORT:-5432}:5432"
+      - "${DB_PORT:-5433}:5432"
     networks:
       - hypertube-net
     healthcheck:
@@ -25,9 +25,16 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: hypertube_backend
-    env_file: ./backend/.env
+    env_file:
+      - path: ./backend/.env
+        required: false
     environment:
       DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-hypertube}
+      DB_USER: ${DB_USER:-hypertube}
+      DB_PASSWORD: ${DB_PASSWORD:-hypertube}
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
       PORT: 3000
       UPLOADS_ROOT: /app/uploads
       FRONTEND_URL: http://localhost:${FRONTEND_PORT:-5173}

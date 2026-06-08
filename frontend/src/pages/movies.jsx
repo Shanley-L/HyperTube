@@ -46,10 +46,6 @@ export default function MovieTest() {
   const requestedDiscoverPagesRef = useRef(new Set());
 
   useEffect(() => {
-    discoverMovies();
-  }, []);
-
-  useEffect(() => {
     if (location.state?.resetFilters) {
       setQuery("");
       setHasSearched(false);
@@ -197,8 +193,12 @@ export default function MovieTest() {
             : true),
       );
     } catch (err) {
-      console.error(err);
-      requestedDiscoverPagesRef.current.delete(pageParam);
+      if (err.response?.status === 429) {
+        setHasMorePages(false);
+      } else {
+        requestedDiscoverPagesRef.current.delete(pageParam);
+        console.error(err);
+      }
     } finally {
       setIsLoading(false);
     }

@@ -46,12 +46,21 @@ app.use(morgan('combined'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-const limiter = rateLimit({
+const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 400,
+  max: 50,
+  standardHeaders: true,
+  legacyHeaders: false,
 });
 
-app.use(ApiRoutes.API, limiter);
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: Number(process.env.RATE_LIMIT_MAX) || 2000,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+app.use(ApiRoutes.API, apiLimiter);
 app.use(ApiRoutes.Uploads, express.static(UPLOADS_ROOT));
 app.use(ApiRoutes.Video, videoRouter);
 app.use(ApiRoutes.Comments, commentRoutes);
@@ -78,7 +87,7 @@ app.use('/subtitles', (req, res, next) => {
     next();
 }, express.static(path.resolve('./subtitles')));
 
-app.use(ApiRoutes.Auth, authRoutes);
+app.use(ApiRoutes.Auth, authLimiter, authRoutes);
 app.use("/api/users", userRoutes);
 app.use('/api/movies', moviesRoutes);
 app.use('/api/comments', commentsRoutes);
