@@ -5,6 +5,7 @@ import Comment from "../components/Comment.jsx";
 import "./comment.css";
 import { useTranslation } from "react-i18next";
 import { Video } from "../../../backend/config/resourceNames.js";
+import { streamUrl, subtitleUrl } from "../utils/urls.js";
 
 const getCleanQuality = (title) => {
   if (!title) return { resolution: "SD", isHeavy: false };
@@ -176,7 +177,12 @@ const MoviePage = () => {
   const currentHash = selectedTorrent ? getHash(selectedTorrent.magnet) : null;
   
   const videoUrl = selectedTorrent
-    ? `http://localhost:3000/api/video/stream/${currentHash}?url=${encodeURIComponent(selectedTorrent.magnet)}&duration=${durationInSeconds}&tmdbId=${movieData.info.tmdb_id}&imdbId=${movieData.info.imdb_id}`
+    ? streamUrl(currentHash, {
+        url: selectedTorrent.magnet,
+        duration: durationInSeconds,
+        tmdbId: movieData.info.tmdb_id,
+        imdbId: movieData.info.imdb_id,
+      })
     : null;
 
   const qualityOrder = ["4K", "1080p", "720p", "SD"];
@@ -268,7 +274,7 @@ const MoviePage = () => {
                   label={sub.language?.toLowerCase() === 'en' ? 'English' : 'French'}
                   kind="subtitles"
                   srcLang={sub.language}
-                  src={`http://localhost:3000/subtitles/${sub.file_path}`}
+                  src={subtitleUrl(sub.file_path)}
                   default={sub.language === i18n.language}
                 />
               ))}

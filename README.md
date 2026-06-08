@@ -90,11 +90,14 @@ Edit `.env` with your configuration:
 - API keys (OMDb, TMDb, etc.)
 - Optional: **`UPLOADS_ROOT`** — avatar files directory (default: `backend/uploads`). For local dev aligned with Docker, set to the absolute path of `frontend/uploads` or `../frontend/uploads` from `backend/`.
 
-#### Profile avatars (DB, disk, frontend)
+#### Profile avatars and URLs
 
-- **DB:** `users.profile_picture_url` stores a **relative** path for uploads, e.g. `/uploads/avatars/{userId}.jpg`, so host/port changes do not break stored values. OAuth (Google) still stores full HTTPS URLs.
-- **Docker:** `docker-compose` mounts `./frontend/uploads` → `/app/uploads` on the backend. Avatars are written to `frontend/uploads/avatars/` on the host.
-- **Frontend:** Set **`VITE_API_URL`** to the API base the **browser** can call (e.g. `http://localhost:3001/api` if Docker maps the API to 3001). Avatar URLs use that host for `/uploads/...`. Helmet is configured with **`Cross-Origin-Resource-Policy: cross-origin`** on the API so avatars load from the Vite dev origin (5173).
+- **DB:** `users.profile_picture_url` stores a **relative** path for uploads, e.g. `/uploads/avatars/{userId}.jpg`. OAuth (Google) may store full HTTPS URLs.
+- **Docker:** `docker-compose` mounts `./frontend/uploads` → `/app/uploads` on the backend.
+- Avatars are served under `/api/uploads/...` via the same origin as the frontend (Docker Nginx or Vite dev proxy).
+- **`FRONTEND_URL`** — browser URL of the frontend (default `http://localhost:5173`). Used for CORS and OAuth redirects.
+- **`JACKETT_URL`** — Jackett API base (default `http://localhost:9117`; in Docker use `http://jackett:9117`).
+- **Frontend env** (`frontend/.env` or build args): **`VITE_API_URL=/api`** (relative path). Optional **`VITE_MEDIA_URL`** for absolute media URLs.
 
 #### 4. Database Setup
 
@@ -128,14 +131,40 @@ sudo apt-get install ffmpeg
 
 ## Running the Application
 
-### Development Mode
+### Full stack (Docker)
+
+Starts PostgreSQL, Jackett, backend, and frontend (Nginx + Vite build):
+
+```bash
+make up
+```
+
+Open **http://localhost:5173** — the API is proxied at `/api` on the same host.
+
+The backend is also exposed directly at **http://localhost:3001** (optional debugging).
+
+### Local development (hot reload)
+
+Runs Docker for db, Jackett, and backend; Vite and nodemon on the host:
 
 ```bash
 make dev
 ```
 
-The backend will run on `http://localhost:3000`
-The frontend will run on `http://localhost:5173`
+- Frontend: `http://localhost:5173` (Vite proxies `/api`, `/subtitles` to `http://localhost:3000`)
+- Backend: `http://localhost:3000`
+
+If only the Docker backend is running, set `VITE_PROXY_TARGET=http://localhost:3001` when starting Vite.
+
+### OAuth callback URLs
+
+When using the Docker frontend (Nginx proxy), register these callback URLs with your OAuth providers:
+
+- `http://localhost:5173/api/auth/42/callback`
+- `http://localhost:5173/api/auth/google/callback`
+- `http://localhost:5173/api/auth/github/callback`
+
+Set matching values in `backend/.env` (`OAUTH_*_CALLBACK_URL`) and `FRONTEND_URL=http://localhost:5173`.
 
 ## Project Structure
 

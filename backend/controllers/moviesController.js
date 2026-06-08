@@ -150,7 +150,8 @@ const moviesController = {
       const movieData = await movieRes.json();
 
       const searchQuery = `${movieData.title} ${movieData.release_date?.split("-")[0]}`;
-      const jackettUrl = `http://localhost:9117/api/v2.0/indexers/all/results?apikey=${process.env.JACKETT_API_KEY}&Query=${encodeURIComponent(searchQuery)}`;
+      const jackettBase = process.env.JACKETT_URL || 'http://localhost:9117';
+      const jackettUrl = `${jackettBase}/api/v2.0/indexers/all/results?apikey=${process.env.JACKETT_API_KEY}&Query=${encodeURIComponent(searchQuery)}`;
       const jackettRes = await fetch(jackettUrl);
       const jackettData = await jackettRes.json();
 

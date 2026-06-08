@@ -1,7 +1,7 @@
 const API_PREFIX = '/api';
 
 export const ApiRoutes = {
-  BaseUrl: "http://localhost:5173",
+  BaseUrl: 'http://localhost:5173',
   API: API_PREFIX,
   Video: `${API_PREFIX}/video`,
   Auth: `${API_PREFIX}/auth`,

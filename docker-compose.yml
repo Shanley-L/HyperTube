@@ -30,6 +30,8 @@ services:
       DB_HOST: db
       PORT: 3000
       UPLOADS_ROOT: /app/uploads
+      FRONTEND_URL: http://localhost:${FRONTEND_PORT:-5173}
+      JACKETT_URL: http://jackett:9117
       TZ: Europe/Paris
     volumes:
       - ./frontend/uploads:/app/uploads
@@ -59,6 +61,20 @@ services:
     networks:
       - hypertube-net
     restart: unless-stopped
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      args:
+        VITE_API_URL: /api
+    container_name: hypertube_frontend
+    ports:
+      - "${FRONTEND_PORT:-5173}:80"
+    depends_on:
+      - backend
+    networks:
+      - hypertube-net
 
 networks:
   hypertube-net:

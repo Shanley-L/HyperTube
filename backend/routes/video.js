@@ -12,6 +12,8 @@ const router = express.Router();
 const activeEngines = {};
 ffmpeg.setFfmpegPath(ffmpegInstaller.path);
 
+const frontendOrigin = () => process.env.FRONTEND_URL || 'http://localhost:5173';
+
 async function resolveMagnet(input) {
   if (input.startsWith("magnet:?")) return input;
   try {
@@ -44,7 +46,7 @@ router.get("/subtitles/:tmdbId", async (req, res) => {
 });
 
 router.get("/status/:id", (req, res) => {
-  res.setHeader("Access-Control-Allow-Origin", "http://localhost:5173");
+  res.setHeader("Access-Control-Allow-Origin", frontendOrigin());
   res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
 
   const magnetHash = req.params.id.toLowerCase();
@@ -83,7 +85,7 @@ function handleMp4Streaming(file, req, res) {
 
   const range = req.headers.range;
   res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
-  res.setHeader("Access-Control-Allow-Origin", process.env.FRONTEND_URL);
+  res.setHeader("Access-Control-Allow-Origin", frontendOrigin());
   res.setHeader("Accept-Ranges", "bytes");
 
   if (range) {
@@ -119,7 +121,7 @@ router.get(ApiRoutes.Stream, async (req, res) => {
   const tmdbId = req.query.tmdbId;
   const imdbId = req.query.imdbId;
 
-  res.setHeader("Access-Control-Allow-Origin", "http://localhost:5173");
+  res.setHeader("Access-Control-Allow-Origin", frontendOrigin());
   res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
 
   if (req.method === "OPTIONS") return res.sendStatus(200);

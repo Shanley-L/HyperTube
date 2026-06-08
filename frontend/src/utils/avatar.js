@@ -5,10 +5,15 @@ export function defaultAvatarUrl() {
 
 function uploadsOrigin() {
   const api = (import.meta.env.VITE_API_URL || '').trim();
-  if (api) return api.replace(/\/api\/?$/, '').replace(/\/$/, '') || api.replace(/\/$/, '');
+  if (api.startsWith('http://') || api.startsWith('https://')) {
+    return api.replace(/\/api\/?$/, '').replace(/\/$/, '') || api.replace(/\/$/, '');
+  }
   const backend = (import.meta.env.VITE_BACKEND_URL || '').trim();
-  if (backend) return backend.replace(/\/$/, '');
-  return 'http://localhost:3000';
+  if (backend.startsWith('http://') || backend.startsWith('https://')) {
+    return backend.replace(/\/$/, '');
+  }
+  if (typeof window !== 'undefined') return window.location.origin;
+  return '';
 }
 
 export function resolveAvatarUrl(profilePictureUrl) {

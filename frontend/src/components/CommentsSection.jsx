@@ -1,14 +1,13 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../services/api';
 
 const CommentsSection = ({ movieId, userId }) => {
     const [comments, setComments] = useState([]);
     const [newComment, setNewComment] = useState("");
-	const commentsBaseUrl = "http://localhost:3000/api/comments/";
 
     useEffect(() => {
         const fetchComments = async () => {
-            const res = await axios.get(`${commentsBaseUrl}${movieId}`);
+            const res = await api.get(`/comments/${movieId}`);
             setComments(res.data);
         };
         fetchComments();
@@ -20,10 +19,9 @@ const CommentsSection = ({ movieId, userId }) => {
 			return;
 
         try {
-            const res = await axios.post(`${commentsBaseUrl}`, {
-                movie_id: movieId,
-                user_id: userId,
-                content: newComment
+            const res = await api.post('/comments', {
+                movieId,
+                comment: newComment,
             });
             setComments([res.data, ...comments]);
             setNewComment("");

@@ -98,17 +98,17 @@ function LoginPage() {
           <p>{t('login.noAccount')} <Link to="/register">{t('login.register')}</Link></p>
           <p>{t('login.forgotPassword')} <Link to="/forgot-password">{t('login.resetPassword')}</Link></p>
           <div className="oauth-section">
-            <a href={`${import.meta.env.VITE_BACKEND_URL}/api/auth/google`}>
+            <a href="/api/auth/google">
               <button className="oauth-button" type="button">
                 <img src={"./src/assets/google.png"} alt={t('login.googleAlt')}/>
               </button>
             </a>
-            <a href={`${import.meta.env.VITE_BACKEND_URL}/api/auth/42`}>
+            <a href="/api/auth/42">
               <button className="oauth-button" type="button">
                 <img src={"./src/assets/42.png"} alt={t('login.fortyTwoAlt')} />
               </button>
             </a>
-            <a href={`${import.meta.env.VITE_BACKEND_URL}/api/auth/github`}>
+            <a href="/api/auth/github">
               <button className="oauth-button" type="button">
                 <img src={"./src/assets/github-logo.webp"} alt={t('login.githubAlt')} />
               </button>

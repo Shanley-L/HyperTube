@@ -1,0 +1,9 @@
+**/node_modules
+**/.env
+**/.env.*
+**/dist
+.git
+jackett_config
+jackett_downloads
+backend/downloads
+backend/subtitles

@@ -1,4 +1,5 @@
-const JACKETT_BASE_URL = "http://localhost:9117/api/v2.0/indexers/all/results";
+const jackettResultsUrl = () =>
+  `${process.env.JACKETT_URL || 'http://localhost:9117'}/api/v2.0/indexers/all/results`;
 const CACHE_TTL_MS = 10 * 60 * 1000;
 const torrentAvailabilityCache = new Map();
 
@@ -59,7 +60,7 @@ export const hasTorrentForMovie = async (movie) => {
   let hasTorrent = false;
   try {
     for (const searchQuery of searchQueries) {
-      const jackettUrl = `${JACKETT_BASE_URL}?apikey=${encodeURIComponent(apiKey)}&Query=${encodeURIComponent(searchQuery)}`;
+      const jackettUrl = `${jackettResultsUrl()}?apikey=${encodeURIComponent(apiKey)}&Query=${encodeURIComponent(searchQuery)}`;
       const jackettRes = await fetch(jackettUrl);
       if (!jackettRes.ok) {
         torrentAvailabilityCache.set(movieId, {

@@ -8,6 +8,9 @@ JWT_SECRET =
 
 PORT= 3000
 
+FRONTEND_URL=http://localhost:5173
+JACKETT_URL=http://localhost:9117
+
 # OAUTH_42_CLIENT_ID =
 
 # OAUTH_42_CLIENT_SECRET =

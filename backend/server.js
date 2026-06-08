@@ -26,10 +26,11 @@ dotenv.config();
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 const PORT = process.env.PORT || 3000;
+const frontendUrl = process.env.FRONTEND_URL || ApiRoutes.BaseUrl;
 
 app.use(
   cors({
-    origin: ApiRoutes.BaseUrl,
+    origin: frontendUrl,
     credentials: true,
   }),
 );
@@ -42,7 +43,6 @@ app.use(
   })
 );
 app.use(morgan('combined'));
-app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
