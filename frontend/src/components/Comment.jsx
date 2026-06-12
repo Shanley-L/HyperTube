@@ -27,7 +27,6 @@ function Comment({ movieId }) {
     }
 };
 
-    // 🔄 Fetch comments whenever movieId changes
     useEffect(() => {
         fetchComments();
     }, [movieId]);

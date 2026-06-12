@@ -36,7 +36,7 @@
   },
   "forgotPassword": {
     "emailSent": "An email has been sent to reset your password.",
-    "askAgain": "No email? Request again and check your address.",
+    "askAgain": "Email not received ? Request again and check your mailbox.",
     "prompt": "Enter your email to receive a reset link",
     "emailPlaceholder": "Email",
     "submit": "Send",

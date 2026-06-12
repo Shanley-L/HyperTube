@@ -32,11 +32,9 @@ const calculateScore = (t) => {
   const leechers = parseInt(t.Peers) || 0;
   const source = (t.Tracker || t.TrackerId || "").toLowerCase();
 
-  // Minimum Viable Swarm
   if (seeders < 3) score -= 1000;
   if (seeders > 10) score += 500;
 
-  // Ratio Check
   if (seeders > 0 && leechers > 0) {
     const ratio = seeders / leechers;
     if (ratio > 0.5 && ratio < 5) score += 400;
@@ -47,12 +45,10 @@ const calculateScore = (t) => {
   if (source.includes("yts")) score += 300;
   if (source.includes("thepiratebay")) score += 300;
 
-  // Size Check
   const sizeGB = t.Size / 1024 ** 3;
   if (sizeGB > 1.5 && sizeGB < 5) score += 300;
-  else if (sizeGB > 10) score -= 150; // Too heavy to start quickly
+  else if (sizeGB > 10) score -= 150;
 
-  // Encoding Check
   if (title.includes("X265") || title.includes("HEVC")) score += 150;
 
   return score;

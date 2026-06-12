@@ -2,7 +2,6 @@ import axios from 'axios';
 import fs from 'fs';
 import path from 'path';
 
-// 🚀 Pull from .env (make sure dotenv.config() is called in your main index.js/app.js)
 const API_KEY = process.env.OPENSUBTITLES_API_KEY;
 
 const convertSrtToVtt = (srtData) => {
@@ -17,7 +16,6 @@ export const fetchAndSaveSubtitles = async (imdbId, tmdbId, languages = ['en', '
     return [];
   }
 
-  // Safety check for the API key
   if (!API_KEY) {
     console.error("Subtitle Service: OPENSUBTITLES_API_KEY is missing in .env");
     return [];
@@ -72,7 +70,6 @@ export const fetchAndSaveSubtitles = async (imdbId, tmdbId, languages = ['en', '
 
           fs.writeFileSync(fullPath, vttContent, 'utf-8');
           
-          // 🚀 Match the keys your frontend is looking for: language and file_path
           savedSubs.push({ 
             language: lang, 
             file_path: fileName 
