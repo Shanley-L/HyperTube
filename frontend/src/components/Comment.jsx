@@ -2,9 +2,12 @@ import { useState, useEffect } from "react";
 import api from "../services/api";
 import { Trash2 } from 'lucide-react';
 import { useTranslation } from "react-i18next";
+import { resolveAvatarUrl } from "../utils/avatar";
+import { useAuth } from "../contexts/AuthContext";
 
 function Comment({ movieId }) { 
     const { t } = useTranslation();
+    const { user } = useAuth();
     const [comments, setComments] = useState([]);
     const [editingId, setEditingId] = useState(null);
     const [editText, setEditText] = useState("");
@@ -49,6 +52,7 @@ function Comment({ movieId }) {
     };
 
     const startEditing = (comment) => {
+        if (user?.userId !== comment.user_id) return;
         setEditingId(comment.id);
         setEditText(comment.content);
     };
@@ -95,8 +99,10 @@ function Comment({ movieId }) {
                 {comments.length === 0 ? (
                     <p style={{textAlign: 'center', color: '#666'}}>{t("comments.NoComments")}</p>
                 ) : (
-                    comments.map((c) => (
-                        <div key={c.id} className="comment-item" onClick={() => startEditing(c)}>
+                    comments.map((c) => {
+                        const isOwner = user?.userId === c.user_id;
+                        return (
+                        <div key={c.id} className="comment-item" onClick={isOwner ? () => startEditing(c) : undefined}>
                             <div className="comment-header">
                                 <span 
                                     className="comment-author"
@@ -105,7 +111,7 @@ function Comment({ movieId }) {
                                     onMouseLeave={() => setHoveredUserId(null)}
                                     onClick={(e) => e.stopPropagation()}
                                 >
-                                    <img className="comment-profile-picture" src={c.profile_picture_url} alt="" />
+                                    <img className="comment-profile-picture" src={resolveAvatarUrl(c.profile_picture_url)} alt="" />
                                     {c.username || 'Utilisateur'}
                                 </span>
                                 <span className="comment-date">
@@ -156,7 +162,8 @@ function Comment({ movieId }) {
                                 <p className="comment-text">{c.content}</p>
                             )}
                         </div>
-                    ))
+                        );
+                    })
                 )}
             </div>
 
@@ -167,7 +174,7 @@ function Comment({ movieId }) {
 
             {hoveredUserId && authorInfo && (
                 <div className="author-tooltip-global" style={{ top: tooltipPos.y + 5, left: tooltipPos.x + 5 }}>
-                    <img className="comment-profile-picture" src={authorInfo.profile_picture_url} alt="" />
+                    <img className="comment-profile-picture" src={resolveAvatarUrl(authorInfo.profile_picture_url)} alt="" />
                     <p><strong>{authorInfo.username}</strong></p>
                     <p>{authorInfo.email}</p>
                 </div>

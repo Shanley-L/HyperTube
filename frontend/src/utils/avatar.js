@@ -20,8 +20,12 @@ export function resolveAvatarUrl(profilePictureUrl) {
   if (profilePictureUrl && String(profilePictureUrl).trim()) {
     const u = String(profilePictureUrl).split('?')[0];
     if (u.startsWith('http://') || u.startsWith('https://')) return u;
+    let path = u.startsWith('/') ? u : `/${u}`;
+    if (path.startsWith('/uploads/')) {
+      path = `/api${path}`;
+    }
     const base = uploadsOrigin();
-    return `${base}${u.startsWith('/') ? u : `/${u}`}`;
+    return `${base}${path}`;
   }
   return defaultAvatarUrl();
 }

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import './users.css';
 import api from "../services/api";
+import { resolveAvatarUrl } from "../utils/avatar";
 
 export default function UserPage() {
     const { id } = useParams();
@@ -38,7 +39,7 @@ export default function UserPage() {
             <div className="user-profile">
                 <button onClick={() => navigate('/users')} className="search-btn">Back</button>
                 <img 
-                    src={user.profile_picture_url || '/avatar-silhouette.svg'} 
+                    src={resolveAvatarUrl(user.profile_picture_url)} 
                     className="user-avatar" 
                     alt="avatar"
                 />
