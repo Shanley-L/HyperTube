@@ -15,7 +15,6 @@ import {
   upsertFavoriteMovieAndMetadata,
   getFavoriteMovieCardsFromDB,
 } from '../models/user.js';
-import { filterMoviesWithTorrents } from '../services/torrentAvailability.js';
 
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, AVATARS_DIR),
@@ -114,8 +113,7 @@ router.get('/me/favorite-movies', authMiddleware, async (req, res) => {
     const { userId } = req.user || {};
     if (!userId) return res.status(400).json({ message: 'Invalid token payload' });
     const favorites = await getFavoriteMovieCardsFromDB(userId);
-    const filteredFavorites = await filterMoviesWithTorrents(favorites);
-    res.json(filteredFavorites);
+    res.json(favorites);
   } catch (e) {
     res.status(500).json({ message: e.message || 'Failed to load favorite movies' });
   }

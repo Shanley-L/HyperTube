@@ -5,8 +5,6 @@ import {
   getWatchedMovies,
   checkIfMovieIsWatched,
 } from "../models/user.js";
-import { filterMoviesWithTorrents } from "../services/torrentAvailability.js";
-
 const CAM_REGEX = /\b(CAM|TS|TELESYNC|TC|SCREENER|SCR|HDCAM)\b/i;
 
 const BEST_TRACKERS = [
@@ -62,11 +60,10 @@ const moviesController = {
       const tmdbUrl = `https://api.themoviedb.org/3/discover/movie?api_key=${process.env.TMDB_API_KEY}&language=${lang}&sort_by=popularity.desc&page=${page}`;
       const tmdbRes = await fetch(tmdbUrl);
       const tmdbData = await tmdbRes.json();
-      const results = await filterMoviesWithTorrents(tmdbData.results || []);
       return res.status(200).json({
         page: tmdbData.page,
         total_pages: tmdbData.total_pages,
-        results,
+        results: tmdbData.results || [],
       });
     } catch (error) {
       console.error(error);

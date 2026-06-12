@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../services/api';
+import { resolveAvatarUrl } from '../utils/avatar';
 
 const CommentsSection = ({ movieId, userId }) => {
     const [comments, setComments] = useState([]);
@@ -49,7 +50,7 @@ const CommentsSection = ({ movieId, userId }) => {
                 {comments.map(c => (
                     <div key={c.id} style={{ borderBottom: '1px solid #333', padding: '15px 0' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <img src={c.profile_picture_url || 'https://via.placeholder.com/40'} alt="" style={{ width: '30px', height: '30px', borderRadius: '50%' }} />
+                            <img src={resolveAvatarUrl(c.profile_picture_url)} alt="" style={{ width: '30px', height: '30px', borderRadius: '50%' }} />
                             <strong>{c.username}</strong>
                             <small style={{ color: '#666' }}>{new Date(c.created_at).toLocaleDateString()}</small>
                         </div>

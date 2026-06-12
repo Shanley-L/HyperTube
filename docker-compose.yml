@@ -38,6 +38,9 @@ services:
       PORT: 3000
       UPLOADS_ROOT: /app/uploads
       FRONTEND_URL: http://localhost:${FRONTEND_PORT:-5173}
+      OAUTH_42_CALLBACK_URL: http://localhost:${FRONTEND_PORT:-5173}/api/auth/42/callback
+      OAUTH_GOOGLE_CALLBACK_URL: http://localhost:${FRONTEND_PORT:-5173}/api/auth/google/callback
+      OAUTH_GITHUB_CALLBACK_URL: http://localhost:${FRONTEND_PORT:-5173}/api/auth/github/callback
       JACKETT_URL: http://jackett:9117
       TZ: Europe/Paris
     volumes:

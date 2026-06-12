@@ -13,6 +13,7 @@ export default defineConfig({
       '/uploads': {
         target: process.env.VITE_PROXY_TARGET || 'http://localhost:3000',
         changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/uploads/, '/api/uploads'),
       },
       '/subtitles': {
         target: process.env.VITE_PROXY_TARGET || 'http://localhost:3000',
