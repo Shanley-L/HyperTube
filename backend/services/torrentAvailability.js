@@ -122,5 +122,6 @@ export const filterMoviesWithTorrents = async (movies = []) => {
     return uniqueMovies;
   }
 
-  return checks.filter(({ hasTorrent }) => hasTorrent !== false).map(({ movie }) => movie);
+  const filtered = checks.filter(({ hasTorrent }) => hasTorrent !== false).map(({ movie }) => movie);
+  return filtered.length > 0 ? filtered : uniqueMovies;
 };
