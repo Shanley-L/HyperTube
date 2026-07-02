@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../contexts/AuthContext";
-import api from "../services/api";
+import api, { isApiFailure } from "../services/api";
 import { useTranslation } from "react-i18next";
 import { avatarSrcWithBust } from "../utils/avatar";
 import { UserRoutes } from "../../../backend/config/resourceNames";
@@ -25,6 +25,7 @@ function ProfileModal({ onClose, onSuccess }) {
     const fetchProfile = async () => {
       try {
         const res = await api.get(UserRoutes.ME);
+        if (isApiFailure(res)) throw new Error('profile unavailable');
         setFormData({
           username: res.data.username ?? "",
           first_name: res.data.first_name ?? "",
@@ -59,13 +60,17 @@ function ProfileModal({ onClose, onSuccess }) {
       const fd = new FormData();
       fd.append("avatar", file);
       const { data } = await api.post("/users/me/avatar", fd);
+      if (isApiFailure({ data })) {
+        setError(data?.message ?? t("profileModal.updateError"));
+        return;
+      }
       const path = data.profile_picture_url || null;
       setAvatarUrl(path);
       const bust = Date.now();
       setAvatarBust(bust);
       await refreshProfile({ avatarBust: true });
-    } catch (err) {
-      setError(err.response?.data?.message ?? t("profileModal.updateError"));
+    } catch {
+      setError(t("profileModal.updateError"));
     } finally {
       setUploading(false);
       if (fileRef.current) fileRef.current.value = "";
@@ -77,11 +82,15 @@ function ProfileModal({ onClose, onSuccess }) {
     setLoading(true);
     setError(null);
     try {
-      await api.patch("/users/me", formData);
+      const res = await api.patch("/users/me", formData);
+      if (isApiFailure(res)) {
+        setError(res.data?.message ?? t("profileModal.updateError"));
+        return;
+      }
       await refreshProfile();
       onSuccess();
-    } catch (err) {
-      setError(err.response?.data?.message ?? t("profileModal.updateError"));
+    } catch {
+      setError(t("profileModal.updateError"));
     } finally {
       setLoading(false);
     }

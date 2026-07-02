@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import api from "../services/api";
+import api, { isApiFailure } from "../services/api";
 import { Trash2 } from 'lucide-react';
 import { useTranslation } from "react-i18next";
 import { resolveAvatarUrl } from "../utils/avatar";
@@ -19,14 +19,18 @@ function Comment({ movieId }) {
     if (!movieId) return;
     try {
         const response = await api.get(`/comments/${movieId}`);
+        if (isApiFailure(response) || !Array.isArray(response.data)) {
+            setComments([]);
+            return;
+        }
         for (const comment of response.data) {
             if (comment.profile_picture_url == null) {
                 comment.profile_picture_url = '/avatar-silhouette.svg';
             }
         }
         setComments(response.data.reverse());
-    } catch (error) {
-        console.error("Failed to fetch comments", error);
+    } catch {
+        setComments([]);
     }
 };
 
@@ -42,11 +46,11 @@ function Comment({ movieId }) {
                 movieId: movieId,
                 comment: content,
             });
+            if (isApiFailure(response)) return;
             setComments([response.data, ...comments]);
             fetchComments();
             e.target.reset();
-        } catch (error) {
-            console.error('Error posting comment:', error);
+        } catch {
         }
     };
 
@@ -59,22 +63,22 @@ function Comment({ movieId }) {
     const handleUpdate = async (id) => {
         if (!editText.trim()) return setEditingId(null);
         try {
-            await api.put(`/comments/${id}`, { comment: editText });
+            const response = await api.put(`/comments/${id}`, { comment: editText });
+            if (isApiFailure(response)) return;
             setComments(comments.map((c) =>
                 c.id === id ? { ...c, content: editText } : c
             ));
             setEditingId(null);
-        } catch (error) {
-            console.error('Error updating comment:', error);
+        } catch {
         }
     };
 
     const handleDelete = async (id) => {
         try {
-            await api.delete(`/comments/${id}`);
+            const response = await api.delete(`/comments/${id}`);
+            if (isApiFailure(response)) return;
             setComments(comments.filter((c) => c.id !== id));
-        } catch (error) {
-            console.error('Error deleting comment:', error);
+        } catch {
         }
     };
 
@@ -82,11 +86,11 @@ function Comment({ movieId }) {
         if (hoveredUserId === userId) return;
         try {
             const response = await api.get(`/users/${userId}`);
+            if (isApiFailure(response)) return;
             setAuthorInfo(response.data);
             setHoveredUserId(userId);
             setTooltipPos({ x: e.clientX, y: e.clientY });
-        } catch (error) {
-            console.error('Error fetching user:', error);
+        } catch {
         }
     };
 
@@ -114,7 +118,6 @@ function Comment({ movieId }) {
                                     {c.username || 'Utilisateur'}
                                 </span>
                                 <span className="comment-date">
-                                    {/* Date logic remains the same */}
                                     {(() => {
                                         const diffInSeconds = Math.floor((new Date() - new Date(c.created_at)) / 1000);
                                         if (diffInSeconds < 60) return t('comments.instant');

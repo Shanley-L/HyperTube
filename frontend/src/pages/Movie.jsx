@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import api from "../services/api";
+import api, { isApiFailure } from "../services/api";
 import Comment from "../components/Comment.jsx";
 import "./comment.css";
 import { useTranslation } from "react-i18next";
@@ -100,13 +100,12 @@ const MoviePage = () => {
     const interval = setInterval(async () => {
       try {
         const subRes = await api.get(`${Video.SUBTITLES}/${movieData.info.tmdb_id}`);
-        if (subRes.data.length > 0 || retries > 10) {
+        if (!isApiFailure(subRes) && Array.isArray(subRes.data) && (subRes.data.length > 0 || retries > 10)) {
           clearInterval(interval);
           setSubtitles(subRes.data);
         }
         retries++;
-      } catch (err) {
-        console.error("Subtitle polling error:", err);
+      } catch {
       }
     }, 3000);
     return () => clearInterval(interval);
@@ -119,6 +118,10 @@ const MoviePage = () => {
           selectMovieid: id,
           lang: i18n.language 
         });
+        if (isApiFailure(res)) {
+          setLoading(false);
+          return;
+        }
         
         setMovieData(res.data);
         setLoading(false);
@@ -126,11 +129,12 @@ const MoviePage = () => {
         const tmdbId = res.data.info?.tmdb_id;
         if (tmdbId) {
           const subRes = await api.get(`${Video.SUBTITLES}/${tmdbId}`);
-          setSubtitles(subRes.data);
+          if (!isApiFailure(subRes) && Array.isArray(subRes.data)) {
+            setSubtitles(subRes.data);
+          }
         }
 
-      } catch (err) {
-        console.error("Error loading data:", err);
+      } catch {
         setLoading(false);
       }
     };
@@ -153,9 +157,10 @@ const MoviePage = () => {
     const interval = setInterval(async () => {
       try {
         const res = await api.get(`/video/status/${hash}`);
-        setTorrentStatus(res.data);
-      } catch (e) {
-        console.error("Status error");
+        if (!isApiFailure(res)) {
+          setTorrentStatus(res.data);
+        }
+      } catch {
       }
     }, 2000);
 

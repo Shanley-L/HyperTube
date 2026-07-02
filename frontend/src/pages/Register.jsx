@@ -1,4 +1,4 @@
-import api from "../services/api";
+import api, { isApiFailure } from "../services/api";
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -35,29 +35,20 @@ function RegisterPage() {
     try{
       const response = await api.post('/auth/register', formData);
       if (response.status === 201) navigate('/login');
-      else if (response.status === 400) {
+      else if (response.data?.errors) {
         const errors = {};
         response.data.errors.forEach((err) => {
           const field = err.param ?? err.path;
           if (field) errors[field] = err.msg;
         });
         setFieldErrors(errors);
-      } else {
+      } else if (response.data?.message) {
+        setError(response.data.message);
+      } else if (isApiFailure(response)) {
         setError(t('register.networkError'));
       }
-    } catch (error) {
-      if (error.response?.data?.errors) {
-        const errors = {};
-        error.response.data.errors.forEach((err) => {
-          const field = err.param ?? err.path;
-          if (field) errors[field] = err.msg;
-        });
-        setFieldErrors(errors);
-      } else if (error.response?.data?.message) {
-        setError(error.response?.data?.message);
-      } else {
-        setError(t('register.networkError'));
-      }
+    } catch {
+      setError(t('register.networkError'));
     }
     finally {
       setLoading(false);

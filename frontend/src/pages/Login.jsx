@@ -1,5 +1,5 @@
 import { useAuth } from "../contexts/AuthContext";
-import api from "../services/api";
+import api, { isApiFailure } from "../services/api";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -38,22 +38,22 @@ function LoginPage() {
 
     try {
       const response = await api.post('/auth/login', formData);
-      if (response.status === 200 && response.data.token) {
+      if (response.data?.token) {
         login(response.data.token);
         navigate(location.state?.from || '/movies');
-      }
-    } catch (error) {
-      if (error.response?.data?.errors) {
+      } else if (response.data?.errors) {
         const errors = {};
-        error.response.data.errors.forEach((err) => {
+        response.data.errors.forEach((err) => {
           errors[err.path] = err.msg;
         });
         setFieldErrors(errors);
-      } else if (error.response?.data?.message) {
-        setError(error.response?.data?.message);
-      } else {
+      } else if (response.data?.message) {
+        setError(response.data.message);
+      } else if (isApiFailure(response)) {
         setError(t('login.networkError'));
       }
+    } catch {
+      setError(t('login.networkError'));
     } finally {
       setLoading(false);
     }

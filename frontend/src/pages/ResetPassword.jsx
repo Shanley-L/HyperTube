@@ -1,5 +1,5 @@
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
-import api from "../services/api";
+import api, { isApiFailure } from "../services/api";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import "./ResetPassword.css";
@@ -27,13 +27,16 @@ function ResetPasswordPage() {
       const response = await api.post('auth/reset-password', {
         ...formData,
         token: token
-      })
-      if (response.status === 200) navigate('/login');
-      if (response.status === 404) setInvalidToken(true);
-    } catch (err) {
-      if (err.response && err.response.status === 404) {
+      });
+      if (response.data?.message && !response.data?.invalidToken && !isApiFailure(response)) {
+        navigate('/login');
+      } else if (response.data?.invalidToken) {
         setInvalidToken(true);
+      } else if (response.data?.message) {
+        setError(response.data.message);
       }
+    } catch {
+      setError(t('resetPassword.networkError'));
     }
   }
 

@@ -1,7 +1,8 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || '/api/',
+  baseURL: import.meta.env.VITE_API_URL || "/api/",
+  validateStatus: () => true,
 });
 
 api.interceptors.request.use((config) => {
@@ -10,17 +11,21 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-api.interceptors.response.use(
-  (res) => res,
-  (err) => {
-    if (err.response?.status === 401) {
-      localStorage.removeItem('token');
-      if (err.response?.data?.code === 'USER_NOT_FOUND' || !window.location.pathname.includes('/login')) {
-        window.location.href = '/login';
-      }
+export const isApiFailure = (res) =>
+  res?.data?.ok === false || res?.data?.unauthorized === true;
+
+export const isUnauthorized = (data) =>
+  data?.unauthorized === true || data?.code === "USER_NOT_FOUND";
+
+api.interceptors.response.use((res) => {
+  if (isUnauthorized(res.data)) {
+    const hadToken = !!localStorage.getItem("token");
+    localStorage.removeItem("token");
+    if (hadToken && !window.location.pathname.includes("/login")) {
+      window.location.href = "/login";
     }
-    return Promise.reject(err);
   }
-);
+  return res;
+});
 
 export default api;

@@ -51,7 +51,8 @@
     "newPasswordPlaceholder": "Nouveau mot de passe",
     "confirmPlaceholder": "Confirmer le mot de passe",
     "submit": "Envoyer",
-    "backToLogin": "Retour à la connexion"
+    "backToLogin": "Retour à la connexion",
+    "networkError": "Échec de la réinitialisation (réseau)"
   },
   "movies": {
     "searchPlaceholder": "Chercher un film…",

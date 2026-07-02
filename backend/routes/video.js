@@ -40,8 +40,7 @@ router.get("/subtitles/:tmdbId", async (req, res) => {
 
     res.json(subs.rows);
   } catch (err) {
-    console.error("Error fetching subtitles from DB:", err);
-    res.status(500).json({ error: "Could not fetch subtitles" });
+    res.status(200).json({ ok: false, error: "Could not fetch subtitles", results: [] });
   }
 });
 
@@ -130,10 +129,10 @@ router.get(ApiRoutes.Stream, async (req, res) => {
     ? await resolveMagnet(jackettUrl)
     : `magnet:?xt=urn:btih:${magnetId}`;
 
-  if (!magnetLink) return res.status(400).send("Source introuvable");
+  if (!magnetLink) return res.status(200).send("");
 
   const magnetHashMatch = magnetLink.match(/btih:([a-zA-Z0-9]+)/);
-  if (!magnetHashMatch) return res.status(400).send("Magnet invalide");
+  if (!magnetHashMatch) return res.status(200).send("");
   const magnetHash = magnetHashMatch[1].toLowerCase();
 
   if (!activeEngines[magnetHash]) {
@@ -155,8 +154,7 @@ router.get(ApiRoutes.Stream, async (req, res) => {
     if (res.headersSent) return;
 
     if (!engine.files || engine.files.length === 0) {
-      console.error("No files found in torrent engine.");
-      return res.status(404).send("Aucun fichier trouvé dans ce torrent.");
+      return res.status(200).send("");
     }
 
     const file = engine.files.reduce((prev, curr) =>
@@ -191,8 +189,7 @@ router.get(ApiRoutes.Stream, async (req, res) => {
             );
           }
         }
-      } catch (err) {
-        console.error("Error updating movie/subs metadata:", err);
+      } catch {
       }
     }
 
@@ -234,7 +231,6 @@ router.get(ApiRoutes.Stream, async (req, res) => {
         command
           .on("error", (err) => {
             if (err.message.includes("Output pipe closed") || err.message.includes("SIGKILL")) return;
-            console.error("FFmpeg Error:", err.message);
             if (!res.headersSent) res.end();
           })
           .pipe(res);
@@ -251,7 +247,7 @@ router.get(ApiRoutes.Stream, async (req, res) => {
       if (engine.files && engine.files.length > 0) {
         startStreaming();
       } else {
-        res.status(404).send("Metadata introuvable ou torrent vide.");
+        res.status(200).send("");
       }
     });
   }

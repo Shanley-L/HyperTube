@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import api from '../services/api';
+import api, { isApiFailure } from '../services/api';
 import { resolveAvatarUrl } from '../utils/avatar';
 
 const CommentsSection = ({ movieId, userId }) => {
@@ -9,7 +9,9 @@ const CommentsSection = ({ movieId, userId }) => {
     useEffect(() => {
         const fetchComments = async () => {
             const res = await api.get(`/comments/${movieId}`);
-            setComments(res.data);
+            if (!isApiFailure(res) && Array.isArray(res.data)) {
+                setComments(res.data);
+            }
         };
         fetchComments();
     }, [movieId]);
@@ -24,11 +26,11 @@ const CommentsSection = ({ movieId, userId }) => {
                 movieId,
                 comment: newComment,
             });
+            if (isApiFailure(res)) return;
             setComments([res.data, ...comments]);
             setNewComment("");
         }
-		catch (err) {
-            console.error("Failed to post comment:", err);
+		catch {
         }
     };
 

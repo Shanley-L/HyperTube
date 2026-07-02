@@ -10,7 +10,7 @@ const validate = (validations) => {
     await Promise.all(validations.map((v) => v.run(req)));
     const errors = validationResult(req);
     if (errors.isEmpty()) return next();
-    return res.status(400).json({ errors: errors.array() });
+    return res.status(200).json({ ok: false, errors: errors.array() });
   };
 };
 

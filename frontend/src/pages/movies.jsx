@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import "../pages/movies.css";
-import api from "../services/api";
+import api, { isApiFailure } from "../services/api";
 import { useAuth } from "../contexts/AuthContext";
 import { MoviesRoutes, UserRoutes } from "../../../backend/config/resourceNames";
 
@@ -142,6 +142,7 @@ export default function MovieTest() {
       api.get(UserRoutes.WATCHED_MOVIES),
       api.get(UserRoutes.FAVORITES),
     ]);
+    if (isApiFailure(watchedRes) || isApiFailure(favoritesRes)) return;
     const watchedIds = Array.isArray(watchedRes.data)
       ? watchedRes.data.map((id) => id?.toString?.()).filter(Boolean)
       : [];
@@ -180,6 +181,11 @@ export default function MovieTest() {
         lang: i18n.language
         }
       });
+      if (isApiFailure(res) || res.data?.code === 'RATE_LIMIT') {
+        if (res.data?.code === 'RATE_LIMIT') setHasMorePages(false);
+        else requestedDiscoverPagesRef.current.delete(pageParam);
+        return;
+      }
       const { results, page: currentPage, total_pages } = res.data;
       const nextResults = Array.isArray(results) ? results : [];
       setMovies((prev) =>
@@ -192,13 +198,8 @@ export default function MovieTest() {
             ? (currentPage ?? pageParam) < total_pages
             : true),
       );
-    } catch (err) {
-      if (err.response?.status === 429) {
-        setHasMorePages(false);
-      } else {
-        requestedDiscoverPagesRef.current.delete(pageParam);
-        console.error(err);
-      }
+    } catch {
+      requestedDiscoverPagesRef.current.delete(pageParam);
     } finally {
       setIsLoading(false);
     }
@@ -217,6 +218,7 @@ export default function MovieTest() {
     setIsLoading(true);
     try {
       const favoritesRes = await api.get("users/me/favorite-movies");
+      if (isApiFailure(favoritesRes)) return;
       const cards = favoritesRes.data || [];
       setMovies(dedupeMoviesById(cards));
       const ids = cards
@@ -225,8 +227,7 @@ export default function MovieTest() {
       setFavoriteMovies(ids);
       setPage(1);
       setHasMorePages(false);
-    } catch (err) {
-      console.error(err);
+    } catch {
     } finally {
       setIsLoading(false);
     }
@@ -289,6 +290,10 @@ export default function MovieTest() {
   }
   try {
     const res = await api.get(`movies/search?q=${query}`);
+    if (isApiFailure(res)) {
+      setMovies([]);
+      return;
+    }
     setSortBy("title-asc");
     setHasSearched(Boolean(query.trim()));
 
@@ -297,8 +302,7 @@ export default function MovieTest() {
       : (res.data?.results || []);
 
     setMovies(dedupeMoviesById(searchData));
-  } catch (err) {
-    console.error(err);
+  } catch {
     setMovies([]);
   }
 };
@@ -317,15 +321,16 @@ export default function MovieTest() {
     );
     try {
       if (isFav) {
-        await api.delete(`users/me/favorites/${encodeURIComponent(id)}`);
+        const res = await api.delete(`users/me/favorites/${encodeURIComponent(id)}`);
+        if (isApiFailure(res)) throw new Error('favorite update failed');
       } else {
-        await api.post("users/me/favorites", { movieId: id });
+        const res = await api.post("users/me/favorites", { movieId: id });
+        if (isApiFailure(res)) throw new Error('favorite update failed');
       }
       if (favoritesOnly) {
         await fetchFavoriteMovieCards();
       }
-    } catch (err) {
-      console.error(err);
+    } catch {
       setFavoriteMovies((prev) =>
         isFav ? [...prev, id] : prev.filter((x) => x !== id),
       );
@@ -339,12 +344,12 @@ export default function MovieTest() {
     }
     const id = movieId.toString();
     try {
-      await api.post("movies/select", { selectMovieid: movieId });
-      await api.post("movies/watched", { selectMovieid: movieId });
+      const selectRes = await api.post("movies/select", { selectMovieid: movieId });
+      const watchedRes = await api.post("movies/watched", { selectMovieid: movieId });
+      if (isApiFailure(selectRes) || isApiFailure(watchedRes)) return;
       setWatchedMovies((prev) => [...prev, id]);
       navigate(`/movie/${movieId}`);
-    } catch (error) {
-      console.error(error);
+    } catch {
     }
   };
 

@@ -12,12 +12,10 @@ const convertSrtToVtt = (srtData) => {
 
 export const fetchAndSaveSubtitles = async (imdbId, tmdbId, languages = ['en', 'fr']) => {
   if (!imdbId || imdbId === 'undefined' || !tmdbId || tmdbId === 'undefined') {
-    console.error("Subtitle Service: Missing IDs", { imdbId, tmdbId });
     return [];
   }
 
   if (!API_KEY) {
-    console.error("Subtitle Service: OPENSUBTITLES_API_KEY is missing in .env");
     return [];
   }
 
@@ -78,8 +76,7 @@ export const fetchAndSaveSubtitles = async (imdbId, tmdbId, languages = ['en', '
       }
     }
     return savedSubs;
-  } catch (err) {
-    console.error("New Subtitle API Error Detail:", err.response?.data || err.message);
+  } catch {
     return [];
   }
 };

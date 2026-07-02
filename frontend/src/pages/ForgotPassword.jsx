@@ -1,4 +1,4 @@
-import api from "../services/api";
+import api, { isApiFailure } from "../services/api";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -20,14 +20,12 @@ function ForgotPasswordPage() {
     e.preventDefault();
     setError('');
     try {
-      const response = await api.post('auth/forgot-password', formData)
-      if (response.status === 200) setIsSubmitted(true);
-    } catch (err) {
-      if (err.response?.data?.message) {
-        setError(err.response.data.message);
-      } else {
-        setError(t('forgotPassword.networkError'));
-      }
+      const response = await api.post('auth/forgot-password', formData);
+      if (response.data?.message && !isApiFailure(response)) setIsSubmitted(true);
+      else if (response.data?.message) setError(response.data.message);
+      else setError(t('forgotPassword.networkError'));
+    } catch {
+      setError(t('forgotPassword.networkError'));
     }
   }
 

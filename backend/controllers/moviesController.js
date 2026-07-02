@@ -1,10 +1,11 @@
-import { response } from "express";
 import {
   findById,
   addWatchedMovie,
   getWatchedMovies,
   checkIfMovieIsWatched,
 } from "../models/user.js";
+import { clientFail } from "../utils/clientResponse.js";
+
 const CAM_REGEX = /\b(CAM|TS|TELESYNC|TC|SCREENER|SCR|HDCAM)\b/i;
 
 const BEST_TRACKERS = [
@@ -15,12 +16,12 @@ const BEST_TRACKERS = [
   "udp://movies.zsw.ca:6969/announce",
   "udp://tracker.cyberia.is:6969/announce",
 ]
-.map((t) => `&tr=${encodeURIComponent(t)}`)
-.join("");
+  .map((t) => `&tr=${encodeURIComponent(t)}`)
+  .join("");
 
 const getTmdbLang = (req) => {
   const lang = req.body.lang || req.query.lang;
-  return lang === 'en' ? 'en-US' : 'fr-FR';
+  return lang === "en" ? "en-US" : "fr-FR";
 };
 
 const calculateScore = (t) => {
@@ -54,7 +55,7 @@ const calculateScore = (t) => {
 
 const moviesController = {
   discover: async (req, res) => {
-    const lang = getTmdbLang(req)
+    const lang = getTmdbLang(req);
     const page = Number(req.query.page) || 1;
     try {
       const tmdbUrl = `https://api.themoviedb.org/3/discover/movie?api_key=${process.env.TMDB_API_KEY}&language=${lang}&sort_by=popularity.desc&page=${page}`;
@@ -65,18 +66,21 @@ const moviesController = {
         total_pages: tmdbData.total_pages,
         results: tmdbData.results || [],
       });
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: "Erreur de découverte" });
+    } catch {
+      return clientFail(res, {
+        error: "Erreur de découverte",
+        page: 1,
+        total_pages: 0,
+        results: [],
+      });
     }
   },
   getPosters: async (req, res) => {
-    const lang = getTmdbLang(req)
+    const lang = getTmdbLang(req);
 
     try {
       const apiKey = process.env.TMDB_API_KEY;
       if (!apiKey || apiKey.trim() === "") {
-        console.warn("getPosters: TMDB_API_KEY absente ou vide dans .env");
         return res.json([]);
       }
       const pages = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
@@ -91,26 +95,16 @@ const moviesController = {
       const posters = results
         .filter((movie) => movie && movie.poster_path)
         .map((movie) => `https://image.tmdb.org/t/p/w300${movie.poster_path}`);
-      if (posters.length === 0) {
-        console.warn(
-          "getPosters: aucun poster (results:",
-          results.length,
-          ", keys reçues:",
-          data ? Object.keys(data) : "null",
-          ")",
-        );
-      }
       res.json(posters);
-    } catch (error) {
-      console.warn("getPosters:", error.message);
+    } catch {
       res.json([]);
     }
   },
   search: async (req, res) => {
-    const lang = getTmdbLang(req)
+    const lang = getTmdbLang(req);
 
     const { q } = req.query;
-    if (!q) return res.status(400).json({ error: "Recherche vide" });
+    if (!q) return clientFail(res, { error: "Recherche vide", results: [] });
 
     try {
       const tmdbUrl = `https://api.themoviedb.org/3/search/movie?api_key=${process.env.TMDB_API_KEY}&query=${encodeURIComponent(q)}&language=${lang}`;
@@ -119,13 +113,12 @@ const moviesController = {
       const tmdbData = await tmdbRes.json();
 
       if (!tmdbData.results || tmdbData.results.length === 0) {
-        return res.status(404).json({ error: "Aucun film trouvé sur TMDB" });
+        return res.status(200).json({ results: [] });
       }
 
       return res.status(200).json(tmdbData);
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: "Erreur de recherche combinée" });
+    } catch {
+      return clientFail(res, { error: "Erreur de recherche combinée", results: [] });
     }
   },
   select: async (req, res) => {
@@ -133,9 +126,8 @@ const moviesController = {
 
     const lang = getTmdbLang(req);
 
-    if (!selectMovieid)
-      return res.status(400).json({ error: "ID manquant" });
-    
+    if (!selectMovieid) return clientFail(res, { error: "ID manquant" });
+
     try {
       const movieRes = await fetch(
         `https://api.themoviedb.org/3/movie/${selectMovieid}?api_key=${process.env.TMDB_API_KEY}&language=${lang}`,
@@ -143,7 +135,7 @@ const moviesController = {
       const movieData = await movieRes.json();
 
       const searchQuery = `${movieData.title} ${movieData.release_date?.split("-")[0]}`;
-      const jackettBase = process.env.JACKETT_URL || 'http://localhost:9117';
+      const jackettBase = process.env.JACKETT_URL || "http://localhost:9117";
       const jackettUrl = `${jackettBase}/api/v2.0/indexers/all/results?apikey=${process.env.JACKETT_API_KEY}&Query=${encodeURIComponent(searchQuery)}`;
       const jackettRes = await fetch(jackettUrl);
       const jackettData = await jackettRes.json();
@@ -215,50 +207,52 @@ const moviesController = {
           overview: movieData.overview,
           runtime: movieData.runtime,
           tmdb_id: movieData.id,
-          imdb_id: movieData.imdb_id
+          imdb_id: movieData.imdb_id,
         },
         torrents: finalTorrents,
       });
-    } catch (error) {
-      console.error("erreur : ", error);
-      res.status(500).json({ error: "Erreur lors de la sélection :", error });
+    } catch {
+      return clientFail(res, { error: "Erreur lors de la sélection" });
     }
   },
   watched: async (req, res) => {
     const userId = req.user.userId;
     const { selectMovieid } = req.body;
-    if (!selectMovieid) return res.status(400).json({ error: "ID manquant" });
+    if (!selectMovieid) return clientFail(res, { error: "ID manquant" });
     const user = await findById(userId);
-    if (!user)
-      return res
-        .status(401)
-        .json({ error: "Utilisateur introuvable", code: "USER_NOT_FOUND" });
+    if (!user) {
+      return clientFail(res, {
+        error: "Utilisateur introuvable",
+        code: "USER_NOT_FOUND",
+      });
+    }
     const isWatched = await checkIfMovieIsWatched(userId, selectMovieid);
     if (isWatched)
       return res.status(200).json({ message: "Film déjà marqué comme vu" });
     try {
       const watchedMovie = await addWatchedMovie(userId, selectMovieid);
       return res.json(watchedMovie);
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: "Erreur lors de l'ajout du film" });
+    } catch {
+      return clientFail(res, { error: "Erreur lors de l'ajout du film" });
     }
   },
   getWatchedMovies: async (req, res) => {
     try {
       const userId = req.user.userId;
       const user = await findById(userId);
-      if (!user)
-        return res
-          .status(401)
-          .json({ error: "Utilisateur introuvable", code: "USER_NOT_FOUND" });
+      if (!user) {
+        return clientFail(res, {
+          error: "Utilisateur introuvable",
+          code: "USER_NOT_FOUND",
+        });
+      }
       const watchedMovies = await getWatchedMovies(userId);
       return res.json(watchedMovies);
-    } catch (error) {
-      console.error(error);
-      res
-        .status(500)
-        .json({ error: "Erreur lors de la récupération des films" });
+    } catch {
+      return clientFail(res, {
+        error: "Erreur lors de la récupération des films",
+        results: [],
+      });
     }
   },
 };

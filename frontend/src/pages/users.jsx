@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import './users.css';
-import api from "../services/api";
+import api, { isApiFailure } from "../services/api";
 import { useNavigate } from "react-router-dom";
 import { UserRoutes } from "../../../backend/config/resourceNames";
 import { resolveAvatarUrl } from "../utils/avatar";
@@ -16,7 +16,9 @@ export default function UsersPage() {
 
     const fetchUsers = async () => {
         const response = await api.get(UserRoutes.USERS);
-        setUsers(response.data);
+        if (!isApiFailure(response) && Array.isArray(response.data)) {
+            setUsers(response.data);
+        }
     };
 
     const handleUserClick = (user) => {

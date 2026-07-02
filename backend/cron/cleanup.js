@@ -19,7 +19,6 @@ cron.schedule('* * * * *', async () => {
                 fs.rmSync(filePath, { recursive: true, force: true });
             }
         });
-    } catch (err) {
-        console.error('Cleanup error:', err);
+    } catch {
     }
 });

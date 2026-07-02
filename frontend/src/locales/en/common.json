@@ -51,7 +51,8 @@
     "newPasswordPlaceholder": "New password",
     "confirmPlaceholder": "Confirm password",
     "submit": "Send",
-    "backToLogin": "Back to login"
+    "backToLogin": "Back to login",
+    "networkError": "Password reset failed due to a network error"
   },
   "movies": {
     "searchPlaceholder": "Search for a movie…",

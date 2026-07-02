@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import api from '../services/api';
+import api, { isApiFailure } from '../services/api';
 import { UserRoutes } from '../../../backend/config/resourceNames';
 
 const AuthContext = createContext();
@@ -26,6 +26,9 @@ export const AuthProvider = ({ children }) => {
     if (!token) return;
     try {
       const { data } = await api.get(UserRoutes.ME);
+      if (isApiFailure({ data })) {
+        throw new Error('profile unavailable');
+      }
       setUser((prev) => ({
         userId: data.id,
         username: data.username,

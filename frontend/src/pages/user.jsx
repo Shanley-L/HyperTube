@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import './users.css';
-import api from "../services/api";
+import api, { isApiFailure } from "../services/api";
 import { resolveAvatarUrl } from "../utils/avatar";
 
 export default function UserPage() {
@@ -13,9 +13,13 @@ export default function UserPage() {
         const fetchUserData = async () => {
             try {
                 const response = await api.get(`/users/${id}`);
+                if (isApiFailure(response)) {
+                    setUser(null);
+                    return;
+                }
                 setUser(response.data);
-            } catch (error) {
-                console.error("Erreur lors de la récup du user:", error);
+            } catch {
+                setUser(null);
             }
         };
         fetchUserData();

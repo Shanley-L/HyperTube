@@ -4,7 +4,6 @@ import { fileURLToPath } from 'url';
 import cors from "cors";
 import dotenv from "dotenv";
 import helmet from "helmet";
-import morgan from "morgan";
 import rateLimit from "express-rate-limit";
 import pool from "./config/database.js";
 
@@ -42,15 +41,19 @@ app.use(
     crossOriginEmbedderPolicy: false,
   })
 );
-app.use(morgan('combined'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+const rateLimitHandler = (_req, res) => {
+  res.status(200).json({ ok: false, message: 'Too many requests', code: 'RATE_LIMIT' });
+};
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 50,
   standardHeaders: true,
   legacyHeaders: false,
+  handler: rateLimitHandler,
 });
 
 const apiLimiter = rateLimit({
@@ -58,6 +61,7 @@ const apiLimiter = rateLimit({
   max: Number(process.env.RATE_LIMIT_MAX) || 2000,
   standardHeaders: true,
   legacyHeaders: false,
+  handler: rateLimitHandler,
 });
 
 app.use(ApiRoutes.API, apiLimiter);
@@ -74,10 +78,10 @@ app.get(ApiRoutes.DBHealth, async (req, res) => {
     await pool.query("SELECT 1");
     res.json({ status: "ok", message: "Database connection successful" });
   } catch (err) {
-    res.status(503).json({
+    res.status(200).json({
+      ok: false,
       status: "error",
       message: "Database connection failed",
-      error: err.message,
     });
   }
 });
@@ -93,7 +97,4 @@ app.use('/api/movies', moviesRoutes);
 app.use('/api/comments', commentsRoutes);
 app.use('/subtitles', express.static(path.resolve('./subtitles')));
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log(`Access the dashboard at: ${ApiRoutes.BaseUrl}`);
-});
+app.listen(PORT, () => {});
